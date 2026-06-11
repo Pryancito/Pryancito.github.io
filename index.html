@@ -35,6 +35,7 @@
       <!-- Navigation Links -->
       <ul class="nav-links" id="nav-links">
         <li><a href="#features" data-i18n="nav_features">Características</a></li>
+        <li><a href="#architecture" data-i18n="nav_architecture">Arquitectura</a></li>
         <li><a href="#guide" data-i18n="nav_guide">Primeros Pasos</a></li>
         <li><a href="#compatibility" data-i18n="nav_compat">Compatibilidad</a></li>
         <li><a href="#downloads" data-i18n="nav_downloads">Descargas</a></li>
@@ -154,6 +155,105 @@
           </div>
           <h3 data-i18n="feat_intel_title">Pruebas en Hardware y Emuladores</h3>
           <p data-i18n="feat_intel_desc">Eclipse OS se ejecuta de forma activa en emuladores y ya se ha probado con éxito arrancando en metal real en el ordenador personal de su desarrollador.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Architecture Section -->
+  <section id="architecture" class="architecture-section">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-subtitle" data-i18n="sec_arch_sub">Ingeniería</div>
+        <h2 data-i18n="sec_arch_title">Arquitectura Interactiva</h2>
+      </div>
+
+      <p class="arch-instructions reveal" data-i18n="arch_instructions" style="text-align: center; max-width: 600px; margin: 0 auto 3rem; color: var(--color-text-secondary); font-size: 1rem;">
+        Haz clic en cualquier componente del diagrama para explorar su funcionamiento interno.
+      </p>
+
+      <div class="arch-grid reveal">
+        <!-- Diagram Column -->
+        <div class="arch-diagram glass">
+          
+          <!-- Layer 1: User Space -->
+          <div class="arch-layer user-space-layer">
+            <span class="layer-label">User Space (Ring 3 / User Mode)</span>
+            <div class="layer-blocks">
+              <div class="arch-component" data-arch="user-apps">
+                <span data-i18n="arch_title_user_apps">Aplicaciones de Usuario</span>
+              </div>
+              <div class="arch-component" data-arch="graphics-server">
+                <span data-i18n="arch_title_graphics_server">Servidor Gráfico (NVIDIA)</span>
+              </div>
+              <div class="arch-component" data-arch="net-manager">
+                <span data-i18n="arch_title_net_manager">Gestor de Red</span>
+              </div>
+              <div class="arch-component" data-arch="posix-compat">
+                <span data-i18n="arch_title_posix_compat">Capa POSIX (musl)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zircon IPC Boundary -->
+          <div class="arch-ipc-bridge arch-component" data-arch="ipc-bridge">
+            <div class="ipc-glow"></div>
+            <span data-i18n="arch_title_ipc_bridge">Límite de IPC de Zircon</span>
+            <div class="ipc-data-flow"></div>
+          </div>
+
+          <!-- Layer 2: Microkernel -->
+          <div class="arch-layer kernel-layer">
+            <span class="layer-label">Rust Microkernel (Ring 0 / Supervisor)</span>
+            <div class="layer-blocks">
+              <div class="arch-component" data-arch="syscall-interface">
+                <span data-i18n="arch_title_syscall_interface">Interfaz de Syscalls</span>
+              </div>
+              <div class="arch-component" data-arch="vm-manager">
+                <span data-i18n="arch_title_vm_manager">Gestor de Memoria Virtual</span>
+              </div>
+              <div class="arch-component" data-arch="scheduler">
+                <span data-i18n="arch_title_scheduler">Planificador de Tareas</span>
+              </div>
+              <div class="arch-component" data-arch="mmu-control">
+                <span data-i18n="arch_title_mmu_control">Control de la MMU</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Layer 3: Hardware -->
+          <div class="arch-layer hardware-layer-block">
+            <span class="layer-label">Physical Hardware / Hypervisor</span>
+            <div class="layer-blocks">
+              <div class="arch-component" data-arch="hardware-cpu">
+                <span data-i18n="arch_title_hardware_cpu">Arquitectura CPU</span>
+              </div>
+              <div class="arch-component" data-arch="hardware-mem">
+                <span data-i18n="arch_title_hardware_mem">RAM y MMU Física</span>
+              </div>
+              <div class="arch-component" data-arch="hardware-dev">
+                <span data-i18n="arch_title_hardware_dev">Dispositivos E/S</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Details Column -->
+        <div class="arch-details glass" id="arch-details-panel">
+          <h3 data-i18n="arch_details_title" style="font-size: 1.25rem; margin-top: 0; color: #ffd384; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.8rem;">Detalles del Componente</h3>
+          
+          <!-- Default State (Nothing Selected) -->
+          <div id="arch-details-placeholder" class="details-placeholder">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="placeholder-icon" style="color: var(--color-text-muted); margin-bottom: 1rem;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <p data-i18n="arch_details_select" style="font-size: 0.95rem; color: var(--color-text-secondary); line-height: 1.5; margin: 0;">Selecciona cualquier componente en el diagrama para ver sus detalles técnicos.</p>
+          </div>
+
+          <!-- Selected Component Details -->
+          <div id="arch-details-content" class="details-content" style="display: none;">
+            <h4 id="arch-details-title" style="margin-top: 0.5rem; font-size: 1.15rem; color: var(--color-text-primary); margin-bottom: 0.8rem;">Título del Componente</h4>
+            <p id="arch-details-desc" style="font-size: 0.95rem; line-height: 1.6; color: var(--color-text-secondary); margin: 0;">Descripción detallada...</p>
+          </div>
         </div>
       </div>
     </div>
@@ -552,6 +652,7 @@
             <h4 data-i18n="footer_col_project">Proyecto</h4>
             <ul>
               <li><a href="#features" data-i18n="footer_link_features">Características</a></li>
+              <li><a href="#architecture" data-i18n="nav_architecture">Arquitectura</a></li>
               <li><a href="#guide" data-i18n="footer_link_docs">Documentación</a></li>
               <li><a href="#compatibility" data-i18n="nav_compat">Compatibilidad</a></li>
               <li><a href="#downloads" data-i18n="nav_downloads">Descargas</a></li>

@@ -1297,3 +1297,194 @@ footer {
     display: none; /* Hide download in nav on very small screens */
   }
 }
+
+/* ==========================================================================
+   Architecture Section
+   ========================================================================== */
+.architecture-section {
+  padding: 100px 0;
+  position: relative;
+  background: rgba(255, 255, 255, 0.005);
+  border-top: 1px solid rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.arch-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.arch-diagram {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2.5rem;
+  border-radius: 12px;
+  background: rgba(18, 16, 32, 0.45);
+}
+
+.arch-layer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border-radius: 10px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.user-space-layer {
+  background: rgba(56, 189, 248, 0.02);
+  border: 1px solid rgba(56, 189, 248, 0.1);
+}
+
+.kernel-layer {
+  background: rgba(239, 68, 68, 0.02);
+  border: 1px solid rgba(239, 68, 68, 0.1);
+}
+
+.hardware-layer-block {
+  background: rgba(148, 163, 184, 0.02);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.layer-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.layer-blocks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 1rem;
+}
+
+.arch-component {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 6px;
+  padding: 0.9rem 0.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+}
+
+.arch-component:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 126, 71, 0.5);
+  color: var(--color-text-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 126, 71, 0.12);
+}
+
+.arch-component.selected {
+  background: rgba(255, 126, 71, 0.08);
+  border-color: #ff7e47;
+  color: #ffd384;
+  box-shadow: 0 0 15px rgba(255, 126, 71, 0.25);
+  transform: scale(1.02);
+}
+
+/* Zircon IPC Bridge styling */
+.arch-ipc-bridge {
+  background: linear-gradient(90deg, rgba(0, 242, 254, 0.03), rgba(79, 172, 254, 0.03));
+  border: 1px dashed rgba(0, 242, 254, 0.3);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  color: #00f2fe;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  min-height: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.arch-ipc-bridge:hover {
+  border-color: #00f2fe;
+  background: linear-gradient(90deg, rgba(0, 242, 254, 0.06), rgba(79, 172, 254, 0.06));
+  color: #00f2fe;
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+  transform: translateY(0);
+}
+
+.arch-ipc-bridge.selected {
+  background: linear-gradient(90deg, rgba(0, 242, 254, 0.1), rgba(79, 172, 254, 0.1));
+  border: 1px solid #00f2fe;
+  color: #ffd384;
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.35);
+  transform: scale(1.01);
+}
+
+/* Details Panel */
+.arch-details {
+  border-radius: 12px;
+  padding: 2rem;
+  min-height: 280px;
+  position: sticky;
+  top: 100px;
+  background: rgba(18, 16, 32, 0.45);
+  display: flex;
+  flex-direction: column;
+}
+
+.details-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin: auto;
+  flex-grow: 1;
+  padding: 2rem 0;
+}
+
+.placeholder-icon {
+  animation: floatPlaceholder 3s ease-in-out infinite;
+}
+
+@keyframes floatPlaceholder {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.details-content {
+  animation: fadeInDetails 0.35s ease-out;
+}
+
+@keyframes fadeInDetails {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.details-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 1rem 0;
+}
+
+/* Responsive constraints for grid */
+@media (max-width: 992px) {
+  .arch-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .arch-details {
+    position: static;
+    min-height: auto;
+  }
+}

@@ -123,7 +123,40 @@ const TRANSLATIONS = {
     footer_link_github: "GitHub",
     footer_link_discord: "Discord",
     footer_link_twitter: "Twitter",
-    footer_copy: "&copy; 2026 Eclipse OS Project. Distributed under the MIT & Apache 2.0 Licenses."
+    footer_copy: "&copy; 2026 Eclipse OS Project. Distributed under the MIT & Apache 2.0 Licenses.",
+
+    // Architecture Section
+    nav_architecture: "Architecture",
+    sec_arch_sub: "Engineering",
+    sec_arch_title: "Interactive Architecture",
+    arch_instructions: "Click on any component in the diagram to explore its inner workings.",
+    arch_details_title: "Component Details",
+    arch_details_select: "Select any component in the diagram to view its details.",
+    
+    arch_title_user_apps: "User Applications",
+    arch_desc_user_apps: "User-space programs such as the <code>busybox</code> command shell, development tools, and utilities. They run isolated with no direct kernel privileges.",
+    arch_title_graphics_server: "Graphics Server (NVIDIA)",
+    arch_desc_graphics_server: "User-space graphics server. In Eclipse OS, the NVIDIA graphics driver runs inside a sandboxed user process. If the graphics subsystem crashes, the kernel restarts it immediately without interrupting system state.",
+    arch_title_net_manager: "Network Manager",
+    arch_desc_net_manager: "User-space network service that manages physical/virtual interfaces (Intel e1000, VirtIO, etc.) and implements TCP/IP protocols outside the core kernel.",
+    arch_title_posix_compat: "POSIX Compatibility (musl)",
+    arch_desc_posix_compat: "Translates standard Linux system calls to native Zircon microkernel primitives, and includes the lightweight <code>musl-libc</code>. This allows compiled Linux binaries (like BusyBox) to run unmodified.",
+    arch_title_ipc_bridge: "Zircon IPC Boundary",
+    arch_desc_ipc_bridge: "Strict capability-based security boundary. User processes communicate with kernel services via thread-safe <strong>Zircon Channels, Ports, and Handles</strong>. Direct memory tampering is physically impossible.",
+    arch_title_vm_manager: "Virtual Memory Manager",
+    arch_desc_vm_manager: "Written in safe Rust, it controls process virtual memory spaces, handles page faults, mappings, allocations, and enforces memory safety guarantees without garbage collection.",
+    arch_title_scheduler: "Thread Scheduler",
+    arch_desc_scheduler: "Kernel thread scheduler that assigns CPU time to user and kernel tasks. Uses fair priority-based scheduling to ensure smooth multitasking and high responsiveness.",
+    arch_title_mmu_control: "MMU Control",
+    arch_desc_mmu_control: "Interacts directly with the processor's Memory Management Unit (MMU) to map page tables and isolate process memory spaces.",
+    arch_title_syscall_interface: "System Call Interface",
+    arch_desc_syscall_interface: "The thin entry point to the kernel. User processes trigger syscalls to perform safe IPC operations, request memory, or spawn threads.",
+    arch_title_hardware_cpu: "CPU Architecture",
+    arch_desc_hardware_cpu: "Supports modern physical CPUs (Intel/AMD 64-bit, RISC-V, ARM64). The microkernel runs in supervisor mode (Ring 0 / Supervisor), while drivers and apps run in user mode (Ring 3 / User).",
+    arch_title_hardware_mem: "RAM & Hardware MMU",
+    arch_desc_hardware_mem: "Physical memory hardware. The CPU's physical MMU protects kernel code pages from user-space tampering.",
+    arch_title_hardware_dev: "I/O Devices",
+    arch_desc_hardware_dev: "Physical network cards, GPUs, and disks. The kernel maps physical I/O registers (MMIO) to driver processes, enabling fast, isolated hardware access."
   },
   es: {
     // Navbar
@@ -248,7 +281,40 @@ const TRANSLATIONS = {
     footer_link_github: "GitHub",
     footer_link_discord: "Discord",
     footer_link_twitter: "Twitter",
-    footer_copy: "&copy; 2026 Proyecto Eclipse OS. Distribuido bajo las licencias MIT y Apache 2.0."
+    footer_copy: "&copy; 2026 Proyecto Eclipse OS. Distribuido bajo las licencias MIT y Apache 2.0.",
+
+    // Architecture Section
+    nav_architecture: "Arquitectura",
+    sec_arch_sub: "Ingeniería",
+    sec_arch_title: "Arquitectura Interactiva",
+    arch_instructions: "Haz clic en cualquier componente del diagrama para explorar su funcionamiento interno.",
+    arch_details_title: "Detalles del Componente",
+    arch_details_select: "Selecciona cualquier componente en el diagrama para ver sus detalles técnicos.",
+
+    arch_title_user_apps: "Aplicaciones de Usuario",
+    arch_desc_user_apps: "Programas de espacio de usuario como la consola de comandos <code>busybox</code>, compiladores y utilidades del sistema. Corren de forma aislada y sin privilegios directos.",
+    arch_title_graphics_server: "Servidor Gráfico (NVIDIA)",
+    arch_desc_graphics_server: "Servidor gráfico en espacio de usuario. En Eclipse OS, el driver de NVIDIA corre en un proceso de usuario aislado. Si falla, el kernel lo reinicia sin colgar el sistema operativo.",
+    arch_title_net_manager: "Gestor de Red",
+    arch_desc_net_manager: "Servicio de red en espacio de usuario que administra interfaces físicas y virtuales (Intel e1000, VirtIO, etc.) y procesa protocolos TCP/IP fuera del núcleo.",
+    arch_title_posix_compat: "Compatibilidad POSIX (musl)",
+    arch_desc_posix_compat: "Traduce las llamadas al sistema de Linux a primitivas nativas del micronúcleo Zircon, e incluye la biblioteca <code>musl-libc</code>. Esto permite ejecutar binarios de Linux sin compilar de nuevo.",
+    arch_title_ipc_bridge: "Límite de IPC de Zircon",
+    arch_desc_ipc_bridge: "Frontera de seguridad estricta basada en capacidades. Los procesos de usuario se comunican con el núcleo mediante <strong>Canales, Puertos y Manejadores (Handles) de Zircon</strong>. No hay memoria compartida directa sin control.",
+    arch_title_vm_manager: "Gestor de Memoria Virtual",
+    arch_desc_vm_manager: "Escrito en Rust seguro, controla los espacios de direcciones virtuales de los procesos, resuelve fallos de página (page faults) y garantiza la seguridad de memoria sin recolector de basura.",
+    arch_title_scheduler: "Planificador de Tareas",
+    arch_desc_scheduler: "Módulo del núcleo que asigna tiempo de CPU a las tareas de usuario y del sistema. Implementa algoritmos de prioridad justa para asegurar una multitarea fluida y una alta respuesta.",
+    arch_title_mmu_control: "Control de la MMU",
+    arch_desc_mmu_control: "Interactúa directamente con la Unidad de Gestión de Memoria (MMU) física para mapear tablas de páginas y aislar la memoria de cada proceso.",
+    arch_title_syscall_interface: "Interfaz de Syscalls",
+    arch_desc_syscall_interface: "El punto de entrada seguro al micronúcleo. Los procesos de usuario invocan syscalls para crear canales IPC, reservar memoria o iniciar hilos.",
+    arch_title_hardware_cpu: "Arquitectura CPU",
+    arch_desc_hardware_cpu: "Soporte para CPUs físicas modernas (Intel/AMD de 64 bits, RISC-V, ARM64). El micronúcleo corre en modo supervisor (Ring 0 / Supervisor), mientras que aplicaciones y drivers corren en modo usuario (Ring 3 / User).",
+    arch_title_hardware_mem: "RAM y MMU Física",
+    arch_desc_hardware_mem: "Hardware de memoria física. La MMU física de la CPU protege las páginas del micronúcleo frente a escrituras no autorizadas desde el espacio de usuario.",
+    arch_title_hardware_dev: "Dispositivos E/S",
+    arch_desc_hardware_dev: "Tarjetas de red, GPUs y almacenamiento físico. El micronúcleo mapea los registros físicos (MMIO) directamente en el espacio de memoria de los drivers aislados."
   }
 };
 
@@ -931,6 +997,59 @@ function initHardwareMatrix() {
   updateMatrix();
 }
 
+// Interactive Architecture Diagram Logic
+let selectedArchComponent = null;
+function initArchitectureDiagram() {
+  const components = document.querySelectorAll(".arch-component");
+  const detailsTitle = document.getElementById("arch-details-title");
+  const detailsDesc = document.getElementById("arch-details-desc");
+  const detailsPlaceholder = document.getElementById("arch-details-placeholder");
+  const detailsContent = document.getElementById("arch-details-content");
+
+  if (!components.length || !detailsTitle || !detailsDesc) return;
+
+  function updateDetails(componentId) {
+    selectedArchComponent = componentId;
+    components.forEach(c => {
+      if (c.getAttribute("data-arch") === componentId) {
+        c.classList.add("selected");
+      } else {
+        c.classList.remove("selected");
+      }
+    });
+
+    const lang = currentLanguage;
+    const titleKey = `arch_title_${componentId.replace(/-/g, "_")}`;
+    const descKey = `arch_desc_${componentId.replace(/-/g, "_")}`;
+
+    if (TRANSLATIONS[lang] && TRANSLATIONS[lang][titleKey]) {
+      detailsPlaceholder.style.display = "none";
+      detailsContent.style.display = "block";
+      detailsTitle.innerHTML = TRANSLATIONS[lang][titleKey];
+      detailsDesc.innerHTML = TRANSLATIONS[lang][descKey];
+    }
+  }
+
+  components.forEach(c => {
+    c.addEventListener("click", () => {
+      const compId = c.getAttribute("data-arch");
+      updateDetails(compId);
+    });
+  });
+
+  window.addEventListener("languageChanged", () => {
+    if (selectedArchComponent) {
+      updateDetails(selectedArchComponent);
+    } else {
+      const lang = currentLanguage;
+      const selectText = document.querySelector("#arch-details-placeholder p");
+      if (selectText) {
+        selectText.innerHTML = TRANSLATIONS[lang]["arch_details_select"];
+      }
+    }
+  });
+}
+
 // DOM Setup
 document.addEventListener("DOMContentLoaded", () => {
   const header = document.querySelector("header");
@@ -977,4 +1096,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initConfigurator();
   initInteractiveTerminal();
   initHardwareMatrix();
+  initArchitectureDiagram();
 });
