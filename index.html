@@ -345,12 +345,18 @@
           </div>
         </div>
 
-        <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; font-family: var(--font-mono); font-size: 0.9rem; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; font-family: var(--font-mono); font-size: 0.9rem; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
           <span style="color: #ffd384; word-break: break-all;" id="config-output">cmdline=LOG=warn:ROOTPROC=/bin/busybox?sh</span>
-          <button id="btn-copy-config" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin: 0; border-radius: 4px; border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.02);">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-            <span data-i18n="config_btn_copy">Copiar</span>
-          </button>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <button id="btn-copy-config" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin: 0; border-radius: 4px; border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); display: flex; align-items: center; gap: 0.4rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span data-i18n="config_btn_copy">Copiar</span>
+            </button>
+            <button id="btn-boot-config" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin: 0; border-radius: 4px; display: flex; align-items: center; gap: 0.4rem; background: var(--grad-primary); border: none;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #07070c;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span data-i18n="config_btn_boot">Boot OS</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

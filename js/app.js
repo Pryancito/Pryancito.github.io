@@ -72,6 +72,7 @@ const TRANSLATIONS = {
     config_label_custom: "Custom Route",
     config_label_log: "Log Level (LOG)",
     config_btn_copy: "Copy",
+    config_btn_boot: "Boot OS",
 
     // Interactive Terminal Tabs
     tab_qemu: "Run in QEMU",
@@ -230,6 +231,7 @@ const TRANSLATIONS = {
     config_label_custom: "Ruta Personalizada",
     config_label_log: "Nivel de Log (LOG)",
     config_btn_copy: "Copiar",
+    config_btn_boot: "Arrancar SO",
 
     // Interactive Terminal Tabs
     tab_qemu: "Probar en QEMU",
@@ -476,6 +478,28 @@ function printTerminalOutputs(outputs, targetDiv) {
       isTerminalAnimating = false;
       const finalPrompt = document.createElement("div");
       finalPrompt.className = "terminal-line interactive-prompt-line";
+      
+      if (activeTabId === "boot_config") {
+        const procSelect = document.getElementById("config-proc");
+        const customProcInput = document.getElementById("config-custom-proc");
+        let rootProcVal = procSelect ? procSelect.value : "/bin/busybox?sh";
+        if (rootProcVal === "custom" && customProcInput) {
+          rootProcVal = customProcInput.value.trim() || "/bin/custom-init";
+        }
+        
+        if (!rootProcVal.includes("busybox") && !rootProcVal.includes("init")) {
+          // System is halted or panicked, show hint
+          const restartHint = currentLanguage === "es" 
+            ? "[Sistema detenido. Cambia la configuración abajo y pulsa 'Arrancar SO' para reiniciar]"
+            : "[System halted. Adjust configuration below and click 'Boot OS' to restart]";
+          finalPrompt.innerHTML = `<span style="color: #64748b; font-style: italic; user-select: none;">${restartHint}</span>`;
+          targetDiv.appendChild(finalPrompt);
+          const termWindow = document.getElementById("terminal-body");
+          termWindow.scrollTop = termWindow.scrollHeight;
+          return;
+        }
+      }
+
       finalPrompt.innerHTML = `
         <span class="terminal-prompt">eclipse-os:~ user$</span>
         <span class="terminal-cmd" id="terminal-interactive-cmd"></span><span class="terminal-cursor" id="terminal-cursor-interactive"></span>
@@ -490,6 +514,104 @@ function printTerminalOutputs(outputs, targetDiv) {
   printNextLine();
 }
 
+// Dynamic OS Boot Simulation Triggered from Configurator
+function bootOSWithConfig(logLevel, rootProc) {
+  const cmd = `make qemu LOG=${logLevel} ROOTPROC=${rootProc}`;
+  const output = [];
+  const lang = currentLanguage;
+  
+  if (lang === "es") {
+    output.push(`[System] Iniciando máquina virtual QEMU con argumentos: LOG=${logLevel} ROOTPROC=${rootProc}...`);
+    output.push("[System] Cargando cargador de arranque rboot (UEFI)...");
+    output.push("[Kernel] Cargando núcleo de Eclipse OS en Rust...");
+    output.push("[Kernel] Inicialización del microkernel de Zircon...");
+    
+    if (logLevel === "debug") {
+      output.push("[Kernel] Dbg: MMU habilitada. Espacio de direcciones virtuales del núcleo activo.");
+      output.push("[Kernel] Dbg: Inicializando tablas de páginas físicas en Ring 0.");
+      output.push("[Kernel] Dbg: Detectado bus local APIC para multitarea.");
+      output.push("[Kernel] Dbg: Detectado controlador de interrupciones x86_64.");
+      output.push("[Kernel] Dbg: Bus PCI enumerado. Encontrado dispositivo 8086:100e (red).");
+      output.push("[Kernel] Dbg: Bus PCI enumerado. Encontrado dispositivo 10de:1c03 (gráficos).");
+    }
+    
+    if (logLevel === "debug" || logLevel === "info" || logLevel === "warn") {
+      output.push("[Kernel] Dispositivo de red física Intel e1000 cargado en espacio de usuario.");
+      output.push("[Kernel] Dispositivo gráfico NVIDIA GPU cargado en espacio de usuario.");
+    }
+    
+    output.push(`[Kernel] Iniciando proceso de espacio de usuario ROOTPROC: ${rootProc}`);
+    
+    if (rootProc.includes("helloworld")) {
+      output.push("[busybox] hello_world: ¡Hola mundo desde el espacio de usuario de Eclipse OS!");
+      output.push("[System] Proceso inicial finalizó con código 0.");
+      output.push("<span style='color: #ffd384;'>[Kernel] Info: No hay más procesos activos. Entrando en modo de ahorro de energía (Halt).</span>");
+    } else if (rootProc.includes("busybox") || rootProc.includes("init")) {
+      output.push("[busybox] busybox v1.35.0 (musl) inicializado con éxito.");
+      output.push("[busybox] Ejecutando shell interactiva (/bin/busybox sh)...");
+      output.push("/ #");
+    } else {
+      output.push(`<span style='color: #ef4444;'>[Kernel] PANIC: Fallo al ejecutar el proceso inicial '${rootProc}': archivo no encontrado.</span>`);
+      output.push("<span style='color: #ef4444;'>[Kernel] panic: volcado de registros de la CPU (Ring 0):</span>");
+      output.push("<pre style='font-family: inherit; margin: 0; color: #ef4444;'>  RAX: 0000000000000002  RBX: 0000000000000000  RCX: 0000000000000001\n" +
+                  "  RDX: fffffff80012ef00  RSP: fffffff80012ef38  RBP: fffffff80012ef60\n" +
+                  "  RIP: fffffff80005ca20  RFL: 0000000000000246 (Interrupts Enabled)</pre>");
+      output.push("<span style='color: #ef4444;'>[Kernel] Stack Trace: [0xfffffff80005ca20] -> [0xfffffff800062b10] -> System Halted.</span>");
+    }
+  } else {
+    output.push(`[System] Starting QEMU virtual machine with arguments: LOG=${logLevel} ROOTPROC=${rootProc}...`);
+    output.push("[System] Loading rboot bootloader (UEFI)...");
+    output.push("[Kernel] Loading Eclipse OS kernel in Rust...");
+    output.push("[Kernel] Initializing Zircon microkernel core...");
+    
+    if (logLevel === "debug") {
+      output.push("[Kernel] Dbg: MMU enabled. Active kernel virtual address space.");
+      output.push("[Kernel] Dbg: Initializing physical page tables in Ring 0.");
+      output.push("[Kernel] Dbg: Local APIC detected for multitasking.");
+      output.push("[Kernel] Dbg: Intel x86_64 interrupt controller initialized.");
+      output.push("[Kernel] Dbg: PCI bus enumerated. Found device 8086:100e (network).");
+      output.push("[Kernel] Dbg: PCI bus enumerated. Found device 10de:1c03 (graphics).");
+    }
+    
+    if (logLevel === "debug" || logLevel === "info" || logLevel === "warn") {
+      output.push("[Kernel] Intel e1000 network hardware interface loaded in user space.");
+      output.push("[Kernel] NVIDIA GPU driver initialized in user space.");
+    }
+    
+    output.push(`[Kernel] Starting initial user-space process ROOTPROC: ${rootProc}`);
+    
+    if (rootProc.includes("helloworld")) {
+      output.push("[busybox] hello_world: Hello world from Eclipse OS user space!");
+      output.push("[System] Initial process exited with code 0.");
+      output.push("<span style='color: #ffd384;'>[Kernel] Info: No more active processes. Entering CPU Halt power-save state.</span>");
+    } else if (rootProc.includes("busybox") || rootProc.includes("init")) {
+      output.push("[busybox] busybox v1.35.0 (musl) initialized successfully.");
+      output.push("[busybox] Spawning interactive POSIX shell (/bin/busybox sh)...");
+      output.push("/ #");
+    } else {
+      output.push(`<span style='color: #ef4444;'>[Kernel] PANIC: Failed to execute initial process '${rootProc}': file not found.</span>`);
+      output.push("<span style='color: #ef4444;'>[Kernel] panic: CPU register dump (Ring 0):</span>");
+      output.push("<pre style='font-family: inherit; margin: 0; color: #ef4444;'>  RAX: 0000000000000002  RBX: 0000000000000000  RCX: 0000000000000001\n" +
+                  "  RDX: fffffff80012ef00  RSP: fffffff80012ef38  RBP: fffffff80012ef60\n" +
+                  "  RIP: fffffff80005ca20  RFL: 0000000000000246 (Interrupts Enabled)</pre>");
+      output.push("<span style='color: #ef4444;'>[Kernel] Stack Trace: [0xfffffff80005ca20] -> [0xfffffff800062b10] -> System Halted.</span>");
+    }
+  }
+
+  TERMINAL_SCRIPTS["boot_config"] = {
+    command: cmd,
+    output: output
+  };
+
+  const terminalSec = document.getElementById("guide");
+  if (terminalSec) {
+    terminalSec.scrollIntoView({ behavior: "smooth" });
+  }
+
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  runTerminalSimulation("boot_config");
+}
+
 // Interactive rboot.conf Configurator Widget Logic
 function initConfigurator() {
   const procSelect = document.getElementById("config-proc");
@@ -498,6 +620,7 @@ function initConfigurator() {
   const logSelect = document.getElementById("config-log");
   const outputSpan = document.getElementById("config-output");
   const copyBtn = document.getElementById("btn-copy-config");
+  const bootBtn = document.getElementById("btn-boot-config");
   
   if (!procSelect || !outputSpan) return;
   
@@ -529,6 +652,17 @@ function initConfigurator() {
       }, 1500);
     });
   });
+
+  if (bootBtn) {
+    bootBtn.addEventListener("click", () => {
+      let procVal = procSelect.value;
+      if (procVal === "custom") {
+        procVal = customProcInput.value.trim() || "/bin/custom-init";
+      }
+      const logVal = logSelect.value;
+      bootOSWithConfig(logVal, procVal);
+    });
+  }
   
   updateConfig();
 }
