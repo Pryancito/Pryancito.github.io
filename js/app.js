@@ -1,4 +1,4 @@
-// Bilingual Translations Dictionary - Real Pryan/Moebius experimental project info
+// Bilingual Translations Dictionary - Eclipse OS Grounded Copy with History & Configurator
 const TRANSLATIONS = {
   en: {
     // Navbar
@@ -48,6 +48,30 @@ const TRANSLATIONS = {
 
     feat_intel_title: "Hardware & VM Testing",
     feat_intel_desc: "Eclipse OS is actively tested on multiple emulators and has successfully booted bare-metal on our primary developer's computer.",
+
+    // Compatibility Section
+    nav_compat: "Compatibility",
+    sec_compat_sub: "Compatibility",
+    sec_compat_title: "Hardware Advisor",
+    compat_cpu_label: "CPU Architecture",
+    compat_gpu_label: "Graphics Controller",
+    compat_net_label: "Network Adapter",
+    compat_platform_label: "Platform / Host",
+    compat_status_supported: "Compatible",
+    compat_status_wip: "In Development",
+    compat_status_planned: "Planned",
+    compat_detail_driver: "Required Driver",
+    compat_detail_mode: "Operation Mode",
+    compat_detail_notes: "Additional Notes",
+    terminal_tip: "💡 Click inside the terminal to type your own commands (e.g. <span class=\"code-highlight\">help</span> or <span class=\"code-highlight\">neofetch</span>), type <span class=\"code-highlight\">clear</span> to wipe.",
+
+    // Configurator Widget
+    config_title: "rboot.conf Boot Configurator",
+    config_desc: "Configure the boot arguments of Eclipse OS to customize the initialization process (init).",
+    config_label_proc: "Initial Process (ROOTPROC)",
+    config_label_custom: "Custom Route",
+    config_label_log: "Log Level (LOG)",
+    config_btn_copy: "Copy",
 
     // Interactive Terminal Tabs
     tab_qemu: "Run in QEMU",
@@ -150,6 +174,30 @@ const TRANSLATIONS = {
     feat_intel_title: "Pruebas en Hardware y Emuladores",
     feat_intel_desc: "Eclipse OS se ejecuta de forma activa en emuladores y ya se ha probado con éxito arrancando en metal real en el ordenador personal de su desarrollador.",
 
+    // Compatibility Section
+    nav_compat: "Compatibilidad",
+    sec_compat_sub: "Compatibilidad",
+    sec_compat_title: "Asesor de Hardware",
+    compat_cpu_label: "Arquitectura CPU",
+    compat_gpu_label: "Controladora Gráfica",
+    compat_net_label: "Adaptador de Red",
+    compat_platform_label: "Plataforma / Host",
+    compat_status_supported: "Compatible",
+    compat_status_wip: "En Desarrollo",
+    compat_status_planned: "Planificado",
+    compat_detail_driver: "Controlador Requerido",
+    compat_detail_mode: "Modo de Operación",
+    compat_detail_notes: "Notas Adicionales",
+    terminal_tip: "💡 Haz clic dentro de la terminal para escribir tus propios comandos (ej. <span class=\"code-highlight\">help</span> o <span class=\"code-highlight\">neofetch</span>), escribe <span class=\"code-highlight\">clear</span> para limpiar.",
+
+    // Configurator Widget
+    config_title: "Configurador de rboot.conf",
+    config_desc: "Modifica los argumentos de arranque de Eclipse OS para cambiar el proceso inicial (init).",
+    config_label_proc: "Proceso Inicial (ROOTPROC)",
+    config_label_custom: "Ruta Personalizada",
+    config_label_log: "Nivel de Log (LOG)",
+    config_btn_copy: "Copiar",
+
     // Interactive Terminal Tabs
     tab_qemu: "Probar en QEMU",
     tab_usb: "Grabar en USB",
@@ -207,8 +255,10 @@ const TRANSLATIONS = {
 // State Variables
 let currentLanguage = localStorage.getItem("eclipse-lang") || "es";
 let terminalTypingInterval = null;
+let activeTabId = "qemu";
+let isTerminalAnimating = false;
 
-// Terminal scripts for simulations (actual zCore compilation & boot commands)
+// Terminal scripts for simulations (actual Makefile & cargo xtask commands)
 const TERMINAL_SCRIPTS = {
   qemu: {
     command: "make qemu ARCH=x86_64",
@@ -276,6 +326,9 @@ function setLanguage(lang) {
       element.innerHTML = TRANSLATIONS[lang][key];
     }
   });
+
+  // Dispatch custom language changed event
+  window.dispatchEvent(new CustomEvent("languageChanged", { detail: { language: lang } }));
   
   // Restart the current terminal script to reflect language/visual refresh
   const activeTab = document.querySelector(".tab-btn.active");
@@ -287,6 +340,9 @@ function setLanguage(lang) {
 
 // Terminal Simulator Logic
 function runTerminalSimulation(tabId) {
+  activeTabId = tabId;
+  isTerminalAnimating = true;
+
   if (terminalTypingInterval) {
     clearInterval(terminalTypingInterval);
   }
@@ -351,11 +407,12 @@ function printTerminalOutputs(outputs, targetDiv) {
       const delay = lineText.includes("Downloading") || lineText.includes("Compiling") ? 400 : 120;
       setTimeout(printNextLine, delay);
     } else {
+      isTerminalAnimating = false;
       const finalPrompt = document.createElement("div");
-      finalPrompt.className = "terminal-line";
+      finalPrompt.className = "terminal-line interactive-prompt-line";
       finalPrompt.innerHTML = `
         <span class="terminal-prompt">eclipse-os:~ user$</span>
-        <span class="terminal-cursor"></span>
+        <span class="terminal-cmd" id="terminal-interactive-cmd"></span><span class="terminal-cursor" id="terminal-cursor-interactive"></span>
       `;
       targetDiv.appendChild(finalPrompt);
       
@@ -365,6 +422,49 @@ function printTerminalOutputs(outputs, targetDiv) {
   }
   
   printNextLine();
+}
+
+// Interactive rboot.conf Configurator Widget Logic
+function initConfigurator() {
+  const procSelect = document.getElementById("config-proc");
+  const customProcInput = document.getElementById("config-custom-proc");
+  const customProcContainer = document.getElementById("config-custom-proc-container");
+  const logSelect = document.getElementById("config-log");
+  const outputSpan = document.getElementById("config-output");
+  const copyBtn = document.getElementById("btn-copy-config");
+  
+  if (!procSelect || !outputSpan) return;
+  
+  function updateConfig() {
+    let procVal = procSelect.value;
+    if (procVal === "custom") {
+      customProcContainer.style.display = "block";
+      procVal = customProcInput.value.trim() || "/bin/custom-init";
+    } else {
+      customProcContainer.style.display = "none";
+    }
+    
+    const logVal = logSelect.value;
+    const cleanProcVal = procVal.replace(/\s+/g, '?');
+    outputSpan.textContent = `cmdline=LOG=${logVal}:ROOTPROC=${cleanProcVal}`;
+  }
+  
+  procSelect.addEventListener("change", updateConfig);
+  customProcInput.addEventListener("input", updateConfig);
+  logSelect.addEventListener("change", updateConfig);
+  
+  copyBtn.addEventListener("click", () => {
+    navigator.clipboard.writeText(outputSpan.textContent).then(() => {
+      const copyTextSpan = copyBtn.querySelector("[data-i18n]");
+      const origText = copyTextSpan.textContent;
+      copyTextSpan.textContent = currentLanguage === "es" ? "¡Copiado!" : "Copied!";
+      setTimeout(() => {
+        copyTextSpan.textContent = origText;
+      }, 1500);
+    });
+  });
+  
+  updateConfig();
 }
 
 // FAQ Accordion Handler
@@ -409,51 +509,6 @@ function initScrollObserver() {
     observer.observe(el);
   });
 }
-
-// DOM Setup
-document.addEventListener("DOMContentLoaded", () => {
-  const header = document.querySelector("header");
-  window.addEventListener("scroll", () => {
-    if (window.scrollY > 20) {
-      header.classList.add("scrolled");
-    } else {
-      header.classList.remove("scrolled");
-    }
-  });
-
-  const burgerMenu = document.getElementById("burger-menu");
-  const navLinks = document.getElementById("nav-links");
-  
-  burgerMenu.addEventListener("click", () => {
-    navLinks.classList.toggle("active");
-  });
-  
-  document.querySelectorAll(".nav-links a").forEach(link => {
-    link.addEventListener("click", () => {
-      navLinks.classList.remove("active");
-    });
-  });
-
-  const langSwitcher = document.getElementById("lang-switcher");
-  langSwitcher.addEventListener("click", () => {
-    const targetLang = currentLanguage === "es" ? "en" : "es";
-    setLanguage(targetLang);
-  });
-
-  document.querySelectorAll(".tab-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      const tabId = btn.getAttribute("data-tab");
-      runTerminalSimulation(tabId);
-    });
-  });
-
-  setLanguage(currentLanguage);
-  initFAQ();
-  initScrollObserver();
-  initSpaceBackground();
-});
 
 // Twinkling Space Starfield Background Animation
 function initSpaceBackground() {
@@ -529,3 +584,397 @@ function initSpaceBackground() {
   
   animate();
 }
+
+// Interactive Terminal Shell Emulator Logic
+function initInteractiveTerminal() {
+  const clicker = document.getElementById("terminal-window-clicker");
+  const hiddenInput = document.getElementById("terminal-hidden-input");
+  const terminalBody = document.getElementById("terminal-body");
+
+  if (!clicker || !hiddenInput || !terminalBody) return;
+
+  // Global click listener to focus hidden input
+  clicker.addEventListener("click", () => {
+    if (isTerminalAnimating) {
+      // Skip simulation typing delay and render outputs immediately
+      clearInterval(terminalTypingInterval);
+      isTerminalAnimating = false;
+      
+      const script = TERMINAL_SCRIPTS[activeTabId];
+      if (script) {
+        terminalBody.innerHTML = `
+          <div class="terminal-line">
+            <span class="terminal-prompt">eclipse-os:~ user$</span>
+            <span class="terminal-cmd">${script.command}</span>
+          </div>
+          <div id="term-outputs"></div>
+        `;
+        
+        const outputsDiv = document.getElementById("term-outputs");
+        script.output.forEach(lineText => {
+          const lineElement = document.createElement("div");
+          lineElement.className = "terminal-line terminal-out";
+          let formattedText = lineText
+            .replace(/(\[Kernel\]|\[System\]|\[Cargo\]|\[Service\]|\[xtask\])/g, '<span class="terminal-highlight">$1</span>')
+            .replace(/(100%|done\.|successfully\.|active\.|ready|successful\.)/g, '<span style="color: #22c55e;">$1</span>')
+            .replace(/(\([^\)]+\))/g, '<span style="color: #ffd384;">$1</span>');
+          lineElement.innerHTML = formattedText;
+          outputsDiv.appendChild(lineElement);
+        });
+
+        const finalPrompt = document.createElement("div");
+        finalPrompt.className = "terminal-line interactive-prompt-line";
+        finalPrompt.innerHTML = `
+          <span class="terminal-prompt">eclipse-os:~ user$</span>
+          <span class="terminal-cmd" id="terminal-interactive-cmd"></span><span class="terminal-cursor" id="terminal-cursor-interactive"></span>
+        `;
+        outputsDiv.appendChild(finalPrompt);
+        
+        terminalBody.scrollTop = terminalBody.scrollHeight;
+      }
+    }
+
+    hiddenInput.focus();
+    const cursor = document.getElementById("terminal-cursor-interactive");
+    if (cursor) {
+      cursor.style.display = "inline-block";
+    }
+  });
+
+  // Track hidden input typing
+  hiddenInput.addEventListener("input", () => {
+    const activeCmdSpan = document.getElementById("terminal-interactive-cmd");
+    if (activeCmdSpan) {
+      activeCmdSpan.textContent = hiddenInput.value;
+    }
+  });
+
+  // Capture Enter key for execution
+  hiddenInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const cmd = hiddenInput.value;
+      hiddenInput.value = "";
+
+      // Freeze current typing command line
+      const activeCmdSpan = document.getElementById("terminal-interactive-cmd");
+      const activeCursor = document.getElementById("terminal-cursor-interactive");
+      if (activeCmdSpan) {
+        activeCmdSpan.id = "";
+      }
+      if (activeCursor) {
+        activeCursor.remove();
+      }
+
+      // Execute command output
+      if (cmd.trim().toLowerCase() === "clear") {
+        terminalBody.innerHTML = "";
+      } else if (cmd.trim() !== "") {
+        const outputDiv = document.createElement("div");
+        outputDiv.className = "terminal-line terminal-out";
+        outputDiv.innerHTML = getCommandResponse(cmd);
+        terminalBody.appendChild(outputDiv);
+      }
+
+      // Create new interactive prompt line
+      const finalPrompt = document.createElement("div");
+      finalPrompt.className = "terminal-line interactive-prompt-line";
+      finalPrompt.innerHTML = `
+        <span class="terminal-prompt">eclipse-os:~ user$</span>
+        <span class="terminal-cmd" id="terminal-interactive-cmd"></span><span class="terminal-cursor" id="terminal-cursor-interactive"></span>
+      `;
+      terminalBody.appendChild(finalPrompt);
+      
+      terminalBody.scrollTop = terminalBody.scrollHeight;
+      hiddenInput.focus();
+    }
+  });
+}
+
+// Generate Interactive Shell Command Outputs
+function getCommandResponse(cmdText) {
+  const cleanCmd = cmdText.trim().toLowerCase();
+  
+  if (cleanCmd === "help") {
+    return currentLanguage === "es"
+      ? "Comandos disponibles:<br>  <span class='terminal-highlight'>help</span>         Muestra esta lista de ayuda.<br>  <span class='terminal-highlight'>clear</span>        Limpia la pantalla de la terminal.<br>  <span class='terminal-highlight'>uname</span>        Muestra la información del sistema operativo.<br>  <span class='terminal-highlight'>neofetch</span>     Muestra información del sistema con un eclipse en ASCII.<br>  <span class='terminal-highlight'>ps</span>           Muestra la lista de procesos activos del micronúcleo.<br>  <span class='terminal-highlight'>ls</span>           Muestra los directorios virtuales en la raíz.<br>  <span class='terminal-highlight'>cat rboot.conf</span> Muestra los argumentos de arranque configurados en el widget de abajo."
+      : "Available commands:<br>  <span class='terminal-highlight'>help</span>         Display this help menu.<br>  <span class='terminal-highlight'>clear</span>        Clear the terminal screen.<br>  <span class='terminal-highlight'>uname</span>        Display operating system release info.<br>  <span class='terminal-highlight'>neofetch</span>     Display system hardware/OS stats with ASCII art.<br>  <span class='terminal-highlight'>ps</span>           List running processes inside the microkernel.<br>  <span class='terminal-highlight'>ls</span>           List virtual root directories.<br>  <span class='terminal-highlight'>cat rboot.conf</span> Show boot arguments configured in the widget below.";
+  }
+  
+  if (cleanCmd === "uname" || cleanCmd === "uname -a") {
+    return "Eclipse-OS 2.1.0-Carbon #1 SMP Thu Jun 11 2026 x86_64 Rust/Zircon (EFI UEFI-Boot)";
+  }
+  
+  if (cleanCmd === "ls") {
+    return "<span style='color: #818cf8; font-weight: bold;'>bin/   dev/   etc/   lib/   proc/   sys/   tmp/   usr/   var/</span>";
+  }
+  
+  if (cleanCmd === "ps") {
+    return "<pre style='font-family: inherit; margin: 0;'>  PID  TUID  STAT  CPU%  MEM   COMMAND\n" +
+           "    1     1  SLEEP  0.0  12MB  /bin/busybox sh\n" +
+           "    3     1  SLEEP  0.1  24MB  /sbin/network_manager\n" +
+           "    4     1  SLEEP  0.0  32MB  /sbin/graphics_server (nvidia)\n" +
+           "   12     1  RUN    0.2  15MB  ps</pre>";
+  }
+  
+  if (cleanCmd === "neofetch") {
+    const logo = 
+`    <span style="color: #ff7e47; font-weight: bold;">.---.</span>      <span style="color: #ffd384; font-weight: bold;">Eclipse OS v2.1.0 (Carbon)</span>
+   <span style="color: #ff7e47; font-weight: bold;">/     \\</span>     --------------------------
+  <span style="color: #ff7e47; font-weight: bold;">|  ( )  |</span>    Kernel: Zircon-Rust Microkernel
+   <span style="color: #ff7e47; font-weight: bold;">\\     /</span>     Shell: busybox sh (POSIX compatibility)
+    <span style="color: #ff7e47; font-weight: bold;">'---'</span>      Uptime: 24 minutes
+               Compiler: rustc 1.78.0-nightly
+               Memory: 112 MB / 2048 MB (Virtual)
+               Host: QEMU x86_64 Emulator (ICH9 BIOS)
+               Active Drivers: intel_e1000, nvidia_gpu, standard_vga`;
+    return `<pre style="font-family: inherit; margin: 0; line-height: 1.4;">${logo}</pre>`;
+  }
+  
+  if (cleanCmd === "cat rboot.conf") {
+    const configOutput = document.getElementById("config-output");
+    const cmdlineVal = configOutput ? configOutput.textContent : "cmdline=LOG=warn:ROOTPROC=/bin/busybox?sh";
+    return `# rboot.conf boot configuration file\n# Generated dynamically by the Eclipse web tool\n\n<span style="color: #ffd384;">${cmdlineVal}</span>`;
+  }
+  
+  // Unknown command
+  return currentLanguage === "es"
+    ? `sh: comando no encontrado: <span style="color: #ef4444;">${cleanCmd}</span>. Escribe <span class="terminal-highlight">help</span> para ver opciones.`
+    : `sh: command not found: <span style="color: #ef4444;">${cleanCmd}</span>. Type <span class="terminal-highlight">help</span> for options.`;
+}
+
+// Hardware Compatibility Matrix Advisor Logic
+function initHardwareMatrix() {
+  const cpuSelect = document.getElementById("compat-cpu");
+  const gpuSelect = document.getElementById("compat-gpu");
+  const netSelect = document.getElementById("compat-net");
+  const platformSelect = document.getElementById("compat-platform");
+
+  const resultTitle = document.getElementById("compat-result-title");
+  const statusBadge = document.getElementById("compat-status-badge");
+  const resultDesc = document.getElementById("compat-result-desc");
+  
+  const driverVal = document.getElementById("compat-detail-driver-val");
+  const modeVal = document.getElementById("compat-detail-mode-val");
+  const notesVal = document.getElementById("compat-detail-notes-val");
+
+  if (!cpuSelect || !resultTitle) return;
+
+  const DATA = {
+    es: {
+      status_supported: "Compatible",
+      status_wip: "En Desarrollo",
+      status_planned: "Planificado",
+      
+      desc_supported_default: "Esta combinación está completamente soportada. El núcleo de Eclipse OS iniciará correctamente y cargará los controladores de red y gráficos en el espacio de usuario.",
+      desc_riscv64: "El soporte para RISC-V 64-bit está en desarrollo activo. Eclipse OS compila y arranca en QEMU Virt, pero algunos controladores de red y periféricos aún no están completamente integrados.",
+      desc_aarch64: "La arquitectura ARM64 está planificada en nuestra hoja de ruta. Actualmente el núcleo no compila de forma nativa para aarch64. ¡Las contribuciones en esta área son bienvenidas!",
+      desc_nvidia: "Arquitectura x86_64 con soporte de GPU NVIDIA en espacio de usuario. Ideal para desarrollo experimental de la interfaz de usuario.",
+      desc_qemu_graphics: "Combinación x86_64 estándar y gráficos QEMU VGA. Es el entorno virtual recomendado para probar y depurar el micronúcleo.",
+      desc_graphics_wip: "Controladores gráficos para Intel HD y AMD Radeon se encuentran en desarrollo. El núcleo cargará en modo de búfer de fotogramas simple UEFI VESA (consola gráfica básica).",
+      desc_net_wip: "Soporte para tarjetas Realtek RTL8139 está en desarrollo. El controlador se encuentra en fase de pruebas básicas.",
+      desc_net_planned: "Las conexiones inalámbricas Wi-Fi están planificadas para fases posteriores. Actualmente solo se admiten conexiones Ethernet cableadas virtuales o físicas.",
+      desc_bare_metal: "Listo para arrancar en metal real mediante UEFI. Se ha probado con éxito en el ordenador del desarrollador principal (CPU Intel + gráfica NVIDIA + Ethernet Intel).",
+      desc_vbox: "Compatibilidad con VirtualBox/VMware parcial. Se pueden presentar fallos menores en la emulación de energía ACPI y en el ratón PS/2.",
+      
+      notes_stable: "Totalmente estable en pruebas automatizadas.",
+      notes_riscv: "Probar vía 'make run ARCH=riscv64'.",
+      notes_arm64: "Fase de diseño e inicialización de MMU.",
+      notes_nvidia: "Requiere cargar el driver en rboot.conf.",
+      notes_graphics_wip: "Aceleración 2D/3D no disponible.",
+      notes_net_wip: "Transmisión básica operativa, recepción inestable.",
+      notes_net_planned: "Requiere pila de red 802.11.",
+      notes_bare_metal: "Grabar imagen EFI en un USB y arrancar.",
+      notes_vbox: "Se recomienda usar QEMU para pruebas estables."
+    },
+    en: {
+      status_supported: "Compatible",
+      status_wip: "In Development",
+      status_planned: "Planned",
+      
+      desc_supported_default: "This combination is fully supported. The Eclipse OS kernel will boot correctly and load the user-space network and graphics drivers.",
+      desc_riscv64: "RISC-V 64-bit support is under active development. Eclipse OS compiles and boots in QEMU Virt, but some network drivers and peripherals are not fully integrated yet.",
+      desc_aarch64: "ARM64 architecture is planned in our roadmap. Currently the kernel does not compile natively for aarch64. Contributions in this area are welcome!",
+      desc_nvidia: "x86_64 architecture with user-space NVIDIA GPU support. Ideal for experimental user interface development.",
+      desc_qemu_graphics: "Standard x86_64 combination and QEMU VGA graphics. This is the recommended virtual environment for testing and debugging the microkernel.",
+      desc_graphics_wip: "Graphics drivers for Intel HD and AMD Radeon are under development. The kernel will fall back to simple UEFI VESA framebuffer mode (basic graphical console).",
+      desc_net_wip: "Support for Realtek RTL8139 cards is in development. The driver is currently in basic testing phase.",
+      desc_net_planned: "Wireless Wi-Fi connections are planned for later phases. Currently only virtual or physical wired Ethernet connections are supported.",
+      desc_bare_metal: "Ready to boot on real hardware via UEFI. Successfully tested on the main developer's computer (Intel CPU + NVIDIA GPU + Intel Ethernet).",
+      desc_vbox: "Partial compatibility with VirtualBox/VMware. Minor issues may occur with ACPI power emulation and PS/2 mouse.",
+      
+      notes_stable: "Fully stable in automated test runs.",
+      notes_riscv: "Test via 'make run ARCH=riscv64'.",
+      notes_arm64: "Design phase & MMU initialization.",
+      notes_nvidia: "Requires loading the driver in rboot.conf.",
+      notes_graphics_wip: "2D/3D acceleration not available.",
+      notes_net_wip: "Basic transmission works, reception unstable.",
+      notes_net_planned: "Requires 802.11 network stack.",
+      notes_bare_metal: "Burn EFI image to a USB drive and boot.",
+      notes_vbox: "QEMU is recommended for stable testing."
+    }
+  };
+
+  function updateMatrix() {
+    const cpu = cpuSelect.value;
+    const gpu = gpuSelect.value;
+    const net = netSelect.value;
+    const platform = platformSelect.value;
+    const lang = currentLanguage;
+
+    // Display title
+    resultTitle.textContent = `${cpu} + ${gpuSelect.options[gpuSelect.selectedIndex].text} + ${netSelect.options[netSelect.selectedIndex].text}`;
+
+    let status = "supported";
+    let desc = DATA[lang].desc_supported_default;
+    let driver = "intel_e1000.drv + standard_vga";
+    let mode = "UEFI Boot / Virt Mode";
+    let notes = DATA[lang].notes_stable;
+
+    // Evaluate CPU first
+    if (cpu === "riscv64") {
+      status = "wip";
+      desc = DATA[lang].desc_riscv64;
+      driver = "riscv64_core + virt_net";
+      mode = "SBI Boot / Virt Mode";
+      notes = DATA[lang].notes_riscv;
+    } else if (cpu === "aarch64") {
+      status = "planned";
+      desc = DATA[lang].desc_aarch64;
+      driver = "aarch64_core (planned)";
+      mode = "Direct Boot (planned)";
+      notes = DATA[lang].notes_arm64;
+    } else {
+      // CPU is x86_64
+      // Check GPU
+      if (gpu === "nvidia") {
+        status = "supported";
+        desc = DATA[lang].desc_nvidia;
+        driver = "nvidia_gpu.drv (user-space)";
+        mode = "UEFI / Nouveau-compat";
+        notes = DATA[lang].notes_nvidia;
+      } else if (gpu === "qemu") {
+        status = "supported";
+        desc = DATA[lang].desc_qemu_graphics;
+        driver = "standard_vga";
+        mode = "UEFI / Virt Mode";
+        notes = DATA[lang].notes_stable;
+      } else if (gpu === "amd" || gpu === "intel") {
+        status = "wip";
+        desc = DATA[lang].desc_graphics_wip;
+        driver = "vesa_framebuffer";
+        mode = "UEFI / Fallback VESA";
+        notes = DATA[lang].notes_graphics_wip;
+      }
+
+      // Check Net
+      if (net === "realtek") {
+        if (status === "supported") {
+          status = "wip";
+          desc = DATA[lang].desc_net_wip;
+          driver = "rtl8139.drv";
+          notes = DATA[lang].notes_net_wip;
+        }
+      } else if (net === "wifi") {
+        status = "planned";
+        desc = DATA[lang].desc_net_planned;
+        driver = "none (planned)";
+        notes = DATA[lang].notes_net_planned;
+      }
+
+      // Check Platform
+      if (platform === "bare_metal") {
+        if (status === "supported") {
+          desc = DATA[lang].desc_bare_metal;
+          mode = "UEFI / Bare Metal";
+          notes = DATA[lang].notes_bare_metal;
+        }
+      } else if (platform === "vbox") {
+        if (status === "supported") {
+          status = "wip";
+          desc = DATA[lang].desc_vbox;
+          driver = driver + " + acpi_fallback";
+          mode = "UEFI / VBox Virt";
+          notes = DATA[lang].notes_vbox;
+        }
+      }
+    }
+
+    // Set badge text & styles
+    statusBadge.className = "compat-status";
+    if (status === "supported") {
+      statusBadge.classList.add("status-supported");
+      statusBadge.textContent = DATA[lang].status_supported;
+    } else if (status === "wip") {
+      statusBadge.classList.add("status-wip");
+      statusBadge.textContent = DATA[lang].status_wip;
+    } else {
+      statusBadge.classList.add("status-planned");
+      statusBadge.textContent = DATA[lang].status_planned;
+    }
+
+    // Set other text
+    resultDesc.textContent = desc;
+    driverVal.textContent = driver;
+    modeVal.textContent = mode;
+    notesVal.textContent = notes;
+  }
+
+  cpuSelect.addEventListener("change", updateMatrix);
+  gpuSelect.addEventListener("change", updateMatrix);
+  netSelect.addEventListener("change", updateMatrix);
+  platformSelect.addEventListener("change", updateMatrix);
+
+  // Hook translation triggers to refresh text values
+  window.addEventListener("languageChanged", updateMatrix);
+
+  updateMatrix();
+}
+
+// DOM Setup
+document.addEventListener("DOMContentLoaded", () => {
+  const header = document.querySelector("header");
+  window.addEventListener("scroll", () => {
+    if (window.scrollY > 20) {
+      header.classList.add("scrolled");
+    } else {
+      header.classList.remove("scrolled");
+    }
+  });
+
+  const burgerMenu = document.getElementById("burger-menu");
+  const navLinks = document.getElementById("nav-links");
+  
+  burgerMenu.addEventListener("click", () => {
+    navLinks.classList.toggle("active");
+  });
+  
+  document.querySelectorAll(".nav-links a").forEach(link => {
+    link.addEventListener("click", () => {
+      navLinks.classList.remove("active");
+    });
+  });
+
+  const langSwitcher = document.getElementById("lang-switcher");
+  langSwitcher.addEventListener("click", () => {
+    const targetLang = currentLanguage === "es" ? "en" : "es";
+    setLanguage(targetLang);
+  });
+
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const tabId = btn.getAttribute("data-tab");
+      runTerminalSimulation(tabId);
+    });
+  });
+
+  setLanguage(currentLanguage);
+  initFAQ();
+  initScrollObserver();
+  initSpaceBackground();
+  initConfigurator();
+  initInteractiveTerminal();
+  initHardwareMatrix();
+});

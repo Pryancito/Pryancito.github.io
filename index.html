@@ -35,8 +35,9 @@
       <!-- Navigation Links -->
       <ul class="nav-links" id="nav-links">
         <li><a href="#features" data-i18n="nav_features">Características</a></li>
-        <li><a href="#downloads" data-i18n="nav_downloads">Descargas</a></li>
         <li><a href="#guide" data-i18n="nav_guide">Primeros Pasos</a></li>
+        <li><a href="#compatibility" data-i18n="nav_compat">Compatibilidad</a></li>
+        <li><a href="#downloads" data-i18n="nav_downloads">Descargas</a></li>
         <li><a href="#faq" data-i18n="nav_faq">FAQ</a></li>
       </ul>
 
@@ -187,7 +188,7 @@
       </div>
 
       <!-- Shell Window -->
-      <div class="terminal-window reveal">
+      <div class="terminal-window reveal" id="terminal-window-clicker" style="cursor: text;">
         <div class="terminal-header">
           <div class="terminal-dots">
             <span class="dot dot-red"></span>
@@ -199,6 +200,143 @@
         </div>
         <div class="terminal-body" id="terminal-body">
           <!-- Populated by JS app.js typing animation -->
+        </div>
+        <!-- Hidden input for interactive typing -->
+        <input type="text" id="terminal-hidden-input" autocomplete="off" autocapitalize="off" spellcheck="false" class="terminal-hidden-input">
+      </div>
+
+      <!-- Interactive tip -->
+      <div class="terminal-tip reveal">
+        <span data-i18n="terminal_tip">💡 Haz clic dentro de la terminal para escribir tus propios comandos (ej. <span class="code-highlight">help</span> o <span class="code-highlight">neofetch</span>)</span>
+      </div>
+
+      <!-- Configurator Widget -->
+      <div class="configurator-wrapper reveal glass" style="max-width: 800px; margin: 3rem auto 0; padding: 2rem; border-color: rgba(255,126,71,0.2);">
+        <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; text-align: left;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span data-i18n="config_title">Configurador de rboot.conf</span>
+        </h3>
+        <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-bottom: 1.5rem; text-align: left;" data-i18n="config_desc">
+          Modifica el proceso inicial (init) de Eclipse OS editando su línea de comandos de arranque.
+        </p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; text-align: left;">
+          <div>
+            <label style="display:block; font-size: 0.8rem; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 0.5rem;" data-i18n="config_label_proc">Proceso Inicial (ROOTPROC)</label>
+            <select id="config-proc" class="glass" style="width: 100%; padding: 0.6rem; color: var(--color-text-primary); border: var(--glass-border); border-radius: 6px; outline: none; background: rgba(0,0,0,0.35);">
+              <option value="/bin/busybox?sh">Shell BusyBox (sh)</option>
+              <option value="/bin/helloworld">Hello World (Test)</option>
+              <option value="/bin/init">Proceso Init Estándar</option>
+              <option value="custom">Personalizado...</option>
+            </select>
+          </div>
+          <div id="config-custom-proc-container" style="display: none;">
+            <label style="display:block; font-size: 0.8rem; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 0.5rem;" data-i18n="config_label_custom">Ruta Personalizada</label>
+            <input type="text" id="config-custom-proc" class="glass" placeholder="/bin/custom-init" style="width: 100%; padding: 0.6rem; color: var(--color-text-primary); border: var(--glass-border); border-radius: 6px; outline: none; background: rgba(0,0,0,0.35); font-family: var(--font-mono); font-size: 0.85rem;">
+          </div>
+          <div>
+            <label style="display:block; font-size: 0.8rem; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 0.5rem;" data-i18n="config_label_log">Nivel de Log (LOG)</label>
+            <select id="config-log" class="glass" style="width: 100%; padding: 0.6rem; color: var(--color-text-primary); border: var(--glass-border); border-radius: 6px; outline: none; background: rgba(0,0,0,0.35);">
+              <option value="warn">Warn (Predeterminado)</option>
+              <option value="info">Info</option>
+              <option value="error">Error</option>
+              <option value="debug">Debug</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; font-family: var(--font-mono); font-size: 0.9rem; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+          <span style="color: #ffd384; word-break: break-all;" id="config-output">cmdline=LOG=warn:ROOTPROC=/bin/busybox?sh</span>
+          <button id="btn-copy-config" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin: 0; border-radius: 4px; border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.02);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span data-i18n="config_btn_copy">Copiar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Hardware Compatibility Section -->
+  <section id="compatibility" class="compat-section">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-subtitle" data-i18n="sec_compat_sub">Compatibilidad</div>
+        <h2 data-i18n="sec_compat_title">Asesor de Hardware</h2>
+      </div>
+
+      <div class="matrix-wrapper reveal glass">
+        <div class="matrix-grid">
+          <!-- CPU Card -->
+          <div class="matrix-card">
+            <h4 data-i18n="compat_cpu_label">Arquitectura CPU</h4>
+            <select id="compat-cpu" class="matrix-select">
+              <option value="x86_64">x86_64 (Intel/AMD 64-bit)</option>
+              <option value="riscv64">RISC-V (riscv64)</option>
+              <option value="aarch64">ARM64 (aarch64)</option>
+            </select>
+          </div>
+
+          <!-- GPU Card -->
+          <div class="matrix-card">
+            <h4 data-i18n="compat_gpu_label">Controladora Gráfica</h4>
+            <select id="compat-gpu" class="matrix-select">
+              <option value="nvidia">NVIDIA (GeForce/RTX)</option>
+              <option value="qemu">QEMU Standard VGA</option>
+              <option value="amd">AMD Radeon</option>
+              <option value="intel">Intel HD/Iris Graphics</option>
+            </select>
+          </div>
+
+          <!-- Network Card -->
+          <div class="matrix-card">
+            <h4 data-i18n="compat_net_label">Adaptador de Red</h4>
+            <select id="compat-net" class="matrix-select">
+              <option value="intel_e1000">Intel e1000/igb (Gigabit)</option>
+              <option value="virtio_net">VirtIO Network Card</option>
+              <option value="realtek">Realtek RTL8139</option>
+              <option value="wifi">Atheros / Intel Wi-Fi</option>
+            </select>
+          </div>
+
+          <!-- Platform Card -->
+          <div class="matrix-card">
+            <h4 data-i18n="compat_platform_label">Plataforma / Host</h4>
+            <select id="compat-platform" class="matrix-select">
+              <option value="qemu_boot">QEMU Emulator</option>
+              <option value="bare_metal">PC Real (Bare Metal)</option>
+              <option value="vbox">VirtualBox / VMware</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Result Status Panel -->
+        <div class="matrix-result-panel">
+          <div class="result-header">
+            <div class="result-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #00f2fe; margin-right: 0.5rem; vertical-align: middle;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              <span id="compat-result-title">x86_64 + QEMU Standard VGA + Intel e1000</span>
+            </div>
+            <div id="compat-status-badge" class="compat-status status-supported" data-i18n="compat_status_supported">Compatible</div>
+          </div>
+          
+          <p class="result-description" id="compat-result-desc">
+            Esta combinación está completamente soportada. El núcleo de Eclipse OS iniciará correctamente y cargará los controladores de red Intel y los gráficos QEMU VGA en el espacio de usuario.
+          </p>
+
+          <div class="result-details-grid">
+            <div class="detail-item">
+              <div class="detail-label" data-i18n="compat_detail_driver">Controlador Requerido</div>
+              <div class="detail-val" id="compat-detail-driver-val">intel_e1000.drv + standard_vga</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label" data-i18n="compat_detail_mode">Modo de Operación</div>
+              <div class="detail-val" id="compat-detail-mode-val">UEFI Boot / Virt Mode</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label" data-i18n="compat_detail_notes">Notas Adicionales</div>
+              <div class="detail-val" id="compat-detail-notes-val">Totalmente estable en pruebas automatizadas.</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -213,7 +351,7 @@
       </div>
 
       <div class="download-grid">
-        <!-- Download 1: Standard x86_64 ISO (Coming Soon, links to Guide) -->
+        <!-- Download 1: Standard x86_64 ISO (Coming Soon) -->
         <div class="download-card glass reveal">
           <div class="download-badge" style="background: rgba(255,255,255,0.06); color: var(--color-text-muted);" data-i18n="dl_stable">Próximamente</div>
           <div class="download-icon">
@@ -251,7 +389,7 @@
           </div>
         </div>
 
-        <!-- Download 2: VM Preconfigured Disk Image (Coming Soon, links to Guide) -->
+        <!-- Download 2: VM Preconfigured Disk Image (Coming Soon) -->
         <div class="download-card glass reveal">
           <div class="download-badge" style="background: rgba(255,255,255,0.06); color: var(--color-text-muted);" data-i18n="dl_nightly">Próximamente</div>
           <div class="download-icon">
@@ -289,7 +427,7 @@
           </div>
         </div>
 
-        <!-- Download 3: Source Code archive (Available Now, primary CTA) -->
+        <!-- Download 3: Source Code archive (Available Now, featured) -->
         <div class="download-card glass reveal featured">
           <div class="download-badge" data-i18n="dl_source">Disponible</div>
           <div class="download-icon">
@@ -414,8 +552,9 @@
             <h4 data-i18n="footer_col_project">Proyecto</h4>
             <ul>
               <li><a href="#features" data-i18n="footer_link_features">Características</a></li>
-              <li><a href="#downloads" data-i18n="footer_link_downloads">Descargas</a></li>
               <li><a href="#guide" data-i18n="footer_link_docs">Documentación</a></li>
+              <li><a href="#compatibility" data-i18n="nav_compat">Compatibilidad</a></li>
+              <li><a href="#downloads" data-i18n="nav_downloads">Descargas</a></li>
             </ul>
           </div>
           
