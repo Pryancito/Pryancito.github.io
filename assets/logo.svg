@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="40" height="40">
+  <defs>
+    <!-- Glow effect filter -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    
+    <!-- Linear gradient for the corona -->
+    <linearGradient id="coronaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffa07a" />
+      <stop offset="50%" stop-color="#ff7e47" />
+      <stop offset="100%" stop-color="#ff4500" />
+    </linearGradient>
+  </defs>
+
+  <!-- Glowing outer corona -->
+  <circle cx="50" cy="50" r="34" fill="url(#coronaGrad)" filter="url(#glow)" opacity="0.85" />
+  
+  <!-- Outer bright rim -->
+  <circle cx="50" cy="50" r="32" fill="none" stroke="#ffd384" stroke-width="1.5" />
+  
+  <!-- Blocking moon body (slightly shifted to create an eclipse sliver) -->
+  <circle cx="47" cy="47" r="30" fill="#08080f" />
+</svg>
