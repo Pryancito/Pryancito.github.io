@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eclipse-bench — Eclipse v0.4.6.1 vs Linux (Pop!_OS)</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --surface: #1a222c;
+    --surface2: #232d3a;
+    --border: #2e3a48;
+    --text: #e7ecf1;
+    --muted: #8b9aab;
+    --eclipse: #5b9fd4;
+    --linux: #6bcb77;
+    --user: #c9a227;
+    --kernel: #e07a5f;
+    --better: #2d6a4f;
+    --worse: #6a2d2d;
+    --pass: #40916c;
+    --note: #3a4553;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.45;
+    font-size: 15px;
+  }
+  header {
+    padding: 2rem 1.5rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #15202b 0%, var(--bg) 100%);
+  }
+  header h1 {
+    margin: 0 0 0.35rem;
+    font-size: 1.55rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+  }
+  header .meta {
+    color: var(--muted);
+    font-size: 0.9rem;
+    max-width: 70ch;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .dot {
+    width: 0.65rem; height: 0.65rem; border-radius: 50%;
+    display: inline-block;
+  }
+  .dot.user { background: var(--user); }
+  .dot.kernel { background: var(--kernel); }
+  .dot.eclipse { background: var(--eclipse); }
+  .dot.linux { background: var(--linux); }
+
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(15, 20, 25, 0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 0.55rem 1.5rem;
+    display: flex; flex-wrap: wrap; gap: 0.4rem 0.85rem;
+    font-size: 0.82rem;
+  }
+  nav a {
+    color: var(--muted);
+    text-decoration: none;
+  }
+  nav a:hover { color: var(--text); }
+
+  main { padding: 1.25rem 1.5rem 3rem; max-width: 1100px; margin: 0 auto; }
+
+  section {
+    margin-bottom: 2rem;
+    scroll-margin-top: 3rem;
+  }
+  section h2 {
+    margin: 0 0 0.35rem;
+    font-size: 1.15rem;
+    font-weight: 650;
+    display: flex; align-items: baseline; gap: 0.6rem;
+  }
+  section h2 .tag {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+  }
+  .section-note {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin: 0 0 0.85rem;
+    max-width: 75ch;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    font-variant-numeric: tabular-nums;
+  }
+  th, td {
+    padding: 0.45rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    background: var(--surface2);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  tr.subgroup td {
+    background: var(--note);
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-style: italic;
+    border-bottom: 1px solid var(--border);
+  }
+  .metric { font-family: "IBM Plex Mono", "Consolas", monospace; font-size: 0.88rem; }
+  .kind {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.08rem 0.35rem;
+    border-radius: 3px;
+    margin-right: 0.35rem;
+    vertical-align: middle;
+  }
+  .kind.user { background: rgba(201,162,39,0.2); color: var(--user); }
+  .kind.kernel { background: rgba(224,122,95,0.2); color: var(--kernel); }
+  .val { font-family: "IBM Plex Mono", "Consolas", monospace; font-size: 0.9rem; white-space: nowrap; }
+  .hint { color: var(--muted); font-size: 0.8rem; font-family: "IBM Plex Mono", monospace; }
+  .missing { color: var(--muted); font-style: italic; }
+  .pass { color: var(--pass); font-weight: 600; }
+  .stutter { color: #f4a261; }
+  td.eclipse-col { border-left: 2px solid transparent; }
+  td.linux-col { border-left: 2px solid transparent; }
+  .better { background: rgba(45, 106, 79, 0.25) !important; }
+  .worse { background: rgba(106, 45, 45, 0.28) !important; }
+  .ratio {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  .ratio.bad { color: #e07a5f; }
+  .ratio.good { color: #6bcb77; }
+
+  .intro {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  @media (max-width: 720px) {
+    .intro { grid-template-columns: 1fr; }
+    th.hide-sm, td.hide-sm { display: none; }
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.1rem;
+  }
+  .card h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .card.eclipse h3 { color: var(--eclipse); }
+  .card.linux h3 { color: var(--linux); }
+  .card dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 0.75rem;
+    font-size: 0.85rem;
+  }
+  .card dt { color: var(--muted); }
+  .card dd { margin: 0; font-family: "IBM Plex Mono", monospace; font-size: 0.82rem; word-break: break-all; }
+
+  .callout {
+    background: var(--surface);
+    border-left: 3px solid var(--kernel);
+    padding: 0.75rem 1rem;
+    margin: 0.75rem 0 0;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>eclipse-bench — comparación</h1>
+  <p class="meta">
+    Misma máquina, 20 CPUs, working set 32&nbsp;MiB.
+    Filas <strong style="color:var(--user)">[user]</strong> miden la CPU (deben ser parecidas).
+    Filas <strong style="color:var(--kernel)">[kernel]</strong> miden el SO — ahí está la diferencia.
+  </p>
+  <div class="legend">
+    <span><i class="dot eclipse"></i> Eclipse v0.4.6.1</span>
+    <span><i class="dot linux"></i> Linux (Pop!_OS)</span>
+    <span><i class="dot user"></i> userspace</span>
+    <span><i class="dot kernel"></i> kernel</span>
+    <span>verde = mejor · rojo = peor (respecto al otro)</span>
+  </div>
+</header>
+
+<nav>
+  <a href="#cpu">CPU</a>
+  <a href="#memory">Memory</a>
+  <a href="#syscall">Syscall</a>
+  <a href="#vm">VM / faults</a>
+  <a href="#sched">Scheduler / IPC</a>
+  <a href="#smp">SMP scaling</a>
+  <a href="#disk">Disk</a>
+  <a href="#process">Process</a>
+  <a href="#ratios">Ratios</a>
+</nav>
+
+<main>
+
+<div class="intro">
+  <div class="card eclipse">
+    <h3>● Eclipse v0.4.6.1</h3>
+    <dl>
+      <dt>self</dt><dd>/bin/eclipse-bench</dd>
+      <dt>dir / disk / mem</dt><dd>. · 32 MiB · 32 MiB</dd>
+      <dt>cpus</dt><dd>20</dd>
+      <dt>cobertura</dt><dd>CPU → SMP (sin Disk / Process / Ratios en este run)</dd>
+    </dl>
+  </div>
+  <div class="card linux">
+    <h3>● Linux Pop!_OS</h3>
+    <dl>
+      <dt>self</dt><dd>…/tools/eclipse-bench/eclipse-bench</dd>
+      <dt>dir / disk / mem</dt><dd>. · 32 MiB · 32 MiB</dd>
+      <dt>cpus</dt><dd>20</dd>
+      <dt>cobertura</dt><dd>completo (incluye Disk, Process, Ratios)</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- CPU -->
+<section id="cpu">
+  <h2>CPU <span class="tag">user</span></h2>
+  <p class="section-note">Propiedad de la CPU, no del OS. Si difieren: P-state / hypervisor.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Métrica</th>
+        <th>Eclipse</th>
+        <th>Linux</th>
+        <th class="hide-sm">Δ</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="kind user">user</span><span class="metric">int latency (dependent)</span></td>
+        <td class="val eclipse-col worse">1036 Mops/s</td>
+        <td class="val linux-col better">1102 Mops/s</td>
+        <td class="ratio hide-sm">0.94×</td>
+      </tr>
+      <tr>
+        <td><span class="kind user">user</span><span class="metric">int throughput (4-wide)</span></td>
+        <td class="val eclipse-col worse">4231 Mops/s</td>
+        <td class="val linux-col better">4427 Mops/s</td>
+        <td class="ratio hide-sm">0.96×</td>
+      </tr>
+      <tr>
+        <td><span class="kind user">user</span><span class="metric">float latency (dependent)</span></td>
+        <td class="val eclipse-col worse">529.0 Mops/s</td>
+        <td class="val linux-col better">553.0 Mops/s</td>
+        <td class="ratio hide-sm">0.96×</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- MEMORY -->
+<section id="memory">
+  <h2>Memory <span class="tag">user · 32 MiB</span></h2>
+  <table>
+    <thead>
+      <tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th class="hide-sm">Δ</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="kind user">user</span><span class="metric">memcpy bandwidth</span></td>
+        <td class="val eclipse-col worse">6.6 GB/s</td>
+        <td class="val linux-col better">8.3 GB/s</td>
+        <td class="ratio hide-sm">0.80×</td>
+      </tr>
+      <tr>
+        <td><span class="kind user">user</span><span class="metric">memset bandwidth</span></td>
+        <td class="val eclipse-col worse">21.1 GB/s</td>
+        <td class="val linux-col better">24.1 GB/s</td>
+        <td class="ratio hide-sm">0.88×</td>
+      </tr>
+      <tr>
+        <td><span class="kind user">user</span><span class="metric">random access latency</span> <span class="hint">(pre-faulted)</span></td>
+        <td class="val eclipse-col better">55.1 ns</td>
+        <td class="val linux-col worse">58.8 ns</td>
+        <td class="ratio hide-sm">0.94×</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- SYSCALL -->
+<section id="syscall">
+  <h2>Syscall <span class="tag">kernel</span></h2>
+  <p class="section-note">Round-trip al kernel. Resta la fila getpid para aislar el coste del subsistema del trap.</p>
+  <p class="section-note">vDSO — Eclipse: <code>0x7ffffff7c000</code> · Linux: <code>0x7b24440f8000</code></p>
+  <table>
+    <thead>
+      <tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">getpid()</span></td>
+        <td class="val eclipse-col worse">509.4 ns</td>
+        <td class="val linux-col better">89.7 ns</td>
+        <td class="hint">~55</td>
+        <td class="ratio bad hide-sm">5.7×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">clock_gettime(MONOTONIC)</span></td>
+        <td class="val eclipse-col better">7.79 ns</td>
+        <td class="val linux-col worse">14.4 ns</td>
+        <td class="hint">~25 (vDSO)</td>
+        <td class="ratio good hide-sm">0.54×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">clock_gettime(REALTIME)</span></td>
+        <td class="val eclipse-col better">8.00 ns</td>
+        <td class="val linux-col worse">14.6 ns</td>
+        <td class="hint">~25 (vDSO)</td>
+        <td class="ratio good hide-sm">0.55×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">gettimeofday()</span></td>
+        <td class="val eclipse-col better">11.9 ns</td>
+        <td class="val linux-col worse">20.9 ns</td>
+        <td class="hint">~25 (vDSO)</td>
+        <td class="ratio good hide-sm">0.57×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">time()</span></td>
+        <td class="val eclipse-col better">9.29 ns</td>
+        <td class="val linux-col worse">15.2 ns</td>
+        <td class="hint">~25 (vDSO)</td>
+        <td class="ratio good hide-sm">0.61×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">raise(SIGUSR1)+handler</span></td>
+        <td class="val eclipse-col worse">2830 ns</td>
+        <td class="val linux-col better">1217 ns</td>
+        <td class="hint">~1500</td>
+        <td class="ratio bad hide-sm">2.3×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">sigprocmask()</span></td>
+        <td class="val eclipse-col worse">557.5 ns</td>
+        <td class="val linux-col better">99.8 ns</td>
+        <td class="hint">~90</td>
+        <td class="ratio bad hide-sm">5.6×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">sched_yield()</span></td>
+        <td class="val eclipse-col worse">728.0 ns</td>
+        <td class="val linux-col better">229.2 ns</td>
+        <td class="hint">~300</td>
+        <td class="ratio bad hide-sm">3.2×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">pread(/dev/zero, 1B)</span></td>
+        <td class="val eclipse-col worse">956.8 ns</td>
+        <td class="val linux-col better">138.5 ns</td>
+        <td class="hint">~250</td>
+        <td class="ratio bad hide-sm">6.9×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">write(/dev/null, 1B)</span></td>
+        <td class="val eclipse-col worse">580.1 ns</td>
+        <td class="val linux-col better">134.0 ns</td>
+        <td class="hint">~250</td>
+        <td class="ratio bad hide-sm">4.3×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fstat()</span></td>
+        <td class="val eclipse-col worse">620.6 ns</td>
+        <td class="val linux-col better">192.5 ns</td>
+        <td class="hint">~300</td>
+        <td class="ratio bad hide-sm">3.2×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">stat("/dev/null")</span></td>
+        <td class="val eclipse-col worse">949.8 ns</td>
+        <td class="val linux-col better">407.8 ns</td>
+        <td class="hint">~900 (path walk)</td>
+        <td class="ratio bad hide-sm">2.3×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">open+close(/dev/null)</span></td>
+        <td class="val eclipse-col worse">3254 ns</td>
+        <td class="val linux-col better">1841 ns</td>
+        <td class="hint">~1200</td>
+        <td class="ratio bad hide-sm">1.8×</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- VM -->
+<section id="vm">
+  <h2>VM / page faults <span class="tag">kernel</span></h2>
+  <p class="section-note">Se pagan en startup y en cada allocation tocada; no aparecen en un memcpy bench.</p>
+  <table>
+    <thead>
+      <tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">mmap+munmap (4 KiB)</span></td>
+        <td class="val eclipse-col worse">4339 ns</td>
+        <td class="val linux-col better">1269 ns</td>
+        <td class="hint">~2500</td>
+        <td class="ratio bad hide-sm">3.4×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">mprotect (4 KiB, ×2)</span></td>
+        <td class="val eclipse-col worse">2388 ns</td>
+        <td class="val linux-col better">741.0 ns</td>
+        <td class="hint">~1800</td>
+        <td class="ratio bad hide-sm">3.2×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">minor fault (anon touch)</span></td>
+        <td class="val eclipse-col worse">1377 ns</td>
+        <td class="val linux-col better">803.7 ns</td>
+        <td class="hint">~500</td>
+        <td class="ratio bad hide-sm">1.7×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">COW fault (after fork)</span></td>
+        <td class="val eclipse-col better">565.4 ns</td>
+        <td class="val linux-col worse">3757 ns</td>
+        <td class="hint">~1500</td>
+        <td class="ratio good hide-sm">0.15×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork memory isolation</span></td>
+        <td class="val pass">PASS</td>
+        <td class="val pass">PASS</td>
+        <td class="hint"></td>
+        <td class="ratio hide-sm">—</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- SCHEDULER -->
+<section id="sched">
+  <h2>Scheduler / IPC <span class="tag">kernel · interactivity</span></h2>
+  <p class="section-note">Lo que hace que un sistema se sienta rápido o lento. Wake-up bajo carga = métrica de interactividad.</p>
+  <table>
+    <thead>
+      <tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">pipe round trip (2 procs)</span></td>
+        <td class="val eclipse-col worse">12.0 µs</td>
+        <td class="val linux-col better">5.94 µs</td>
+        <td class="hint">~6</td>
+        <td class="ratio bad hide-sm">2.0×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">pipe round trip (2 thrds)</span></td>
+        <td class="val eclipse-col worse">11.2 µs</td>
+        <td class="val linux-col better">5.53 µs</td>
+        <td class="hint">~4</td>
+        <td class="ratio bad hide-sm">2.0×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">socketpair round trip</span></td>
+        <td class="val eclipse-col worse">25.9 µs</td>
+        <td class="val linux-col better">5.52 µs</td>
+        <td class="hint">~8</td>
+        <td class="ratio bad hide-sm">4.7×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">futex wake round trip</span></td>
+        <td class="val eclipse-col worse">7.48 µs</td>
+        <td class="val linux-col better">3.91 µs</td>
+        <td class="hint">~3</td>
+        <td class="ratio bad hide-sm">1.9×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">pthread_create + join</span></td>
+        <td class="val eclipse-col better">25.7 µs</td>
+        <td class="val linux-col worse">1626 µs</td>
+        <td class="hint">~15</td>
+        <td class="ratio good hide-sm">0.016×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">pipe bandwidth (64K writes)</span></td>
+        <td class="val eclipse-col better">7269 MB/s</td>
+        <td class="val linux-col worse">1107 MB/s</td>
+        <td class="hint">&gt;1000</td>
+        <td class="ratio good hide-sm">6.6×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">sleep 1ms late, idle (mean)</span></td>
+        <td class="val eclipse-col worse">3031 µs</td>
+        <td class="val linux-col better">81.2 µs</td>
+        <td class="hint">~60</td>
+        <td class="ratio bad hide-sm">37×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">sleep 1ms late, idle (worst)</span></td>
+        <td class="val eclipse-col worse">11423 µs</td>
+        <td class="val linux-col better">132.2 µs</td>
+        <td class="hint">~200</td>
+        <td class="ratio bad hide-sm">86×</td>
+      </tr>
+      <tr class="subgroup"><td colspan="5">con 20 procesos CPU-bound compitiendo</td></tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">sleep 1ms late, load (mean)</span></td>
+        <td class="val eclipse-col worse">31685 µs</td>
+        <td class="val linux-col better">52.3 µs</td>
+        <td class="hint">~100</td>
+        <td class="ratio bad hide-sm">606×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric stutter">sleep 1ms late, load (worst) ← stutter</span></td>
+        <td class="val eclipse-col worse">171463 µs</td>
+        <td class="val linux-col better">62.5 µs</td>
+        <td class="hint">~500</td>
+        <td class="ratio bad hide-sm">2743×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">pipe round trip, load</span></td>
+        <td class="val eclipse-col worse">377276 µs</td>
+        <td class="val linux-col better">47.1 µs</td>
+        <td class="hint">~20</td>
+        <td class="ratio bad hide-sm">8010×</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    Un kernel que solo replanifica al expirar el timeslice muestra un salto grande idle→load.
+    Uno que preempta al wake-up (Linux) casi no lo muestra. <strong style="color:var(--text)">Eclipse salta ~10–8000× bajo carga.</strong>
+  </div>
+</section>
+
+<!-- SMP -->
+<section id="smp">
+  <h2>SMP scaling <span class="tag">20 CPUs</span></h2>
+  <p class="section-note">Trabajo ALU puro en userspace: cualquier cosa por debajo de escalado lineal es el kernel (placement, contention, CPUs offline).</p>
+  <table>
+    <thead>
+      <tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">1 thread aggregate</span></td>
+        <td class="val eclipse-col worse">1008 Mops/s</td>
+        <td class="val linux-col better">1091 Mops/s</td>
+        <td class="hint"></td>
+        <td class="ratio hide-sm">0.92×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">20 threads aggregate</span></td>
+        <td class="val eclipse-col worse">5743 Mops/s</td>
+        <td class="val linux-col better">18544 Mops/s</td>
+        <td class="hint"></td>
+        <td class="ratio bad hide-sm">0.31×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">scaling efficiency</span></td>
+        <td class="val eclipse-col worse">28.5 %</td>
+        <td class="val linux-col better">85.0 %</td>
+        <td class="hint">&gt;90</td>
+        <td class="ratio bad hide-sm">0.34×</td>
+      </tr>
+      <tr class="subgroup"><td colspan="5">kernel SMP paths: contention, shootdowns, cross-CPU wakes</td></tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">getpid/s ×1</span></td>
+        <td class="val eclipse-col worse">1.94 Mops/s</td>
+        <td class="val linux-col better">10.6 Mops/s</td>
+        <td class="hint"></td>
+        <td class="ratio bad hide-sm">0.18×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">getpid/s ×20</span></td>
+        <td class="val eclipse-col worse">2.44 Mops/s</td>
+        <td class="val linux-col better">123.4 Mops/s</td>
+        <td class="hint"></td>
+        <td class="ratio bad hide-sm">0.02×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">syscall scaling</span></td>
+        <td class="val eclipse-col worse">6.29 %</td>
+        <td class="val linux-col better">58.4 %</td>
+        <td class="hint">&gt;85</td>
+        <td class="ratio bad hide-sm">0.11×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">mprotect flip, peers idle</span></td>
+        <td class="val eclipse-col worse">1466 ns</td>
+        <td class="val linux-col better">1094 ns</td>
+        <td class="hint"></td>
+        <td class="ratio bad hide-sm">1.3×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">mprotect flip, 19 spinning</span></td>
+        <td class="val eclipse-col worse">9811 ns</td>
+        <td class="val linux-col better">5861 ns</td>
+        <td class="hint"></td>
+        <td class="ratio bad hide-sm">1.7×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">shootdown cost</span></td>
+        <td class="val eclipse-col worse">6.69 ×</td>
+        <td class="val linux-col better">5.36 ×</td>
+        <td class="hint">~2–4 (IPI)</td>
+        <td class="ratio hide-sm">1.2×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">mmap+touch+munmap ×20 vs ×1</span></td>
+        <td class="val eclipse-col better">0.93 %</td>
+        <td class="val linux-col worse">0.55 %</td>
+        <td class="hint">~40–70</td>
+        <td class="ratio hide-sm">1.7×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">minor faults/s ×1</span></td>
+        <td class="val eclipse-col worse">675.1 kflt/s</td>
+        <td class="val linux-col better">811.9 kflt/s</td>
+        <td class="hint"></td>
+        <td class="ratio hide-sm">0.83×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">minor faults/s ×20</span></td>
+        <td class="val eclipse-col better">718.4 kflt/s</td>
+        <td class="val linux-col worse">543.4 kflt/s</td>
+        <td class="hint"></td>
+        <td class="ratio good hide-sm">1.3×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fault scaling</span></td>
+        <td class="val eclipse-col better">5.32 %</td>
+        <td class="val linux-col worse">3.35 %</td>
+        <td class="hint">&gt;60</td>
+        <td class="ratio hide-sm">1.6×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">contended mutex collapse</span></td>
+        <td class="val eclipse-col worse">46.3 ×</td>
+        <td class="val linux-col better">16.9 ×</td>
+        <td class="hint">~10–40</td>
+        <td class="ratio bad hide-sm">2.7×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">pipe RT pinned same-CPU</span></td>
+        <td class="val missing">—</td>
+        <td class="val">2.38 µs</td>
+        <td class="hint"></td>
+        <td class="ratio hide-sm">—</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">pipe RT pinned cross-CPU</span></td>
+        <td class="val missing">—</td>
+        <td class="val">4.73 µs</td>
+        <td class="hint"></td>
+        <td class="ratio hide-sm">—</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">cross-CPU wake cost</span></td>
+        <td class="val missing">—</td>
+        <td class="val">1.99 ×</td>
+        <td class="hint">~0.5–2</td>
+        <td class="ratio hide-sm">—</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">forks/s ×1</span></td>
+        <td class="val missing">—</td>
+        <td class="val">488.5 forks/s</td>
+        <td class="hint"></td>
+        <td class="ratio hide-sm">—</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">forks/s ×20 procs</span></td>
+        <td class="val missing">—</td>
+        <td class="val">12860 forks/s</td>
+        <td class="hint"></td>
+        <td class="ratio hide-sm">—</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork scaling</span></td>
+        <td class="val missing">—</td>
+        <td class="val">131.6 %</td>
+        <td class="hint">~50–80</td>
+        <td class="ratio hide-sm">—</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fairness max/min (2× hogs)</span></td>
+        <td class="val missing">—</td>
+        <td class="val">n/a ×</td>
+        <td class="hint">&lt;1.5</td>
+        <td class="ratio hide-sm">—</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- DISK -->
+<section id="disk">
+  <h2>Disk <span class="tag">32 MiB · solo Linux</span></h2>
+  <p class="section-note">free=466338 MiB → file 32 MiB, hasta 4000 meta files. Eclipse no incluye esta sección en el run.</p>
+  <table>
+    <thead>
+      <tr><th>Métrica</th><th>Eclipse</th><th>Linux</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">seq write (+fsync)</span></td>
+        <td class="val missing">—</td>
+        <td class="val">741.3 MB/s</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">seq read</span></td>
+        <td class="val missing">—</td>
+        <td class="val">8.9 GB/s</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">rand 4K read</span></td>
+        <td class="val missing">—</td>
+        <td class="val">1 921 647 IOPS</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">rand 4K read latency</span></td>
+        <td class="val missing">—</td>
+        <td class="val">0.52 µs</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fsync latency (best)</span></td>
+        <td class="val missing">—</td>
+        <td class="val">0.92 ms</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">meta create small files</span></td>
+        <td class="val missing">—</td>
+        <td class="val">2014 files/s</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">meta stat</span></td>
+        <td class="val missing">—</td>
+        <td class="val">334 274 stats/s</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">meta unlink</span></td>
+        <td class="val missing">—</td>
+        <td class="val">4186 unlinks/s</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- PROCESS -->
+<section id="process">
+  <h2>Process creation <span class="tag">solo Linux</span></h2>
+  <p class="section-note">Test COW: un fork COW paga por mapping, no por MiB. Eclipse no incluye esta sección en el run.</p>
+  <table>
+    <thead>
+      <tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork + exit</span></td>
+        <td class="val missing">—</td>
+        <td class="val">2442 µs</td>
+        <td class="hint">~70</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork + exit, 1 MiB resident</span></td>
+        <td class="val missing">—</td>
+        <td class="val">2586 µs</td>
+        <td class="hint"></td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork + exit, 16 MiB resident</span></td>
+        <td class="val missing">—</td>
+        <td class="val">4011 µs</td>
+        <td class="hint"></td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork cost per MiB resident</span></td>
+        <td class="val missing">—</td>
+        <td class="val">95.0 µs/MiB</td>
+        <td class="hint"></td>
+      </tr>
+      <tr>
+        <td><span class="metric">vs memcpy 1 MiB here</span></td>
+        <td class="val missing">—</td>
+        <td class="val">241.0 µs/MiB</td>
+        <td class="hint"></td>
+      </tr>
+      <tr>
+        <td><span class="metric">fork copy ratio</span></td>
+        <td class="val missing">—</td>
+        <td class="val">0.39 ×</td>
+        <td class="hint">COW ~0.3, eager ≥1</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork + exit, 8 mappings</span></td>
+        <td class="val missing">—</td>
+        <td class="val">2779 µs</td>
+        <td class="hint"></td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork + exit, 256 mappings</span></td>
+        <td class="val missing">—</td>
+        <td class="val">3928 µs</td>
+        <td class="hint"></td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork cost per mapping</span></td>
+        <td class="val missing">—</td>
+        <td class="val">4.63 µs/mapping</td>
+        <td class="hint"></td>
+      </tr>
+      <tr class="subgroup"><td colspan="4">con 19 procesos CPU-bound compitiendo</td></tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork+exit, 8 maps, load</span></td>
+        <td class="val missing">—</td>
+        <td class="val">1542 µs</td>
+        <td class="hint"></td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork+exit, 256 maps, load</span></td>
+        <td class="val missing">—</td>
+        <td class="val">2078 µs</td>
+        <td class="hint"></td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork cost per mapping, load</span></td>
+        <td class="val missing">—</td>
+        <td class="val">2.16 µs/mapping</td>
+        <td class="hint"></td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork + exec(self, static)</span></td>
+        <td class="val missing">—</td>
+        <td class="val">2286 µs</td>
+        <td class="hint">~350</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork + exec(/bin/sh -c :)</span></td>
+        <td class="val missing">—</td>
+        <td class="val">4599 µs</td>
+        <td class="hint">~1200</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- RATIOS -->
+<section id="ratios">
+  <h2>Ratios <span class="tag">hardware-independent · solo Linux</span></h2>
+  <p class="section-note"><code>wake late loaded/idle</code> es el titular. Cerca de 1 = el task woken obtiene CPU al instante aunque la máquina esté ocupada.</p>
+  <table>
+    <thead>
+      <tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="metric">syscall cost in CPU ops</span></td>
+        <td class="val missing">—</td>
+        <td class="val">98.8 ops</td>
+        <td class="hint">~150–250</td>
+      </tr>
+      <tr>
+        <td><span class="metric">context switch / syscall</span></td>
+        <td class="val missing">—</td>
+        <td class="val">66.3 ×</td>
+        <td class="hint">~100</td>
+      </tr>
+      <tr>
+        <td><span class="metric">wake late loaded/idle (mean)</span></td>
+        <td class="val missing">—</td>
+        <td class="val">0.64 ×</td>
+        <td class="hint">~1–3</td>
+      </tr>
+      <tr>
+        <td><span class="metric stutter">wake late loaded/idle (worst) ← interactivity</span></td>
+        <td class="val missing">—</td>
+        <td class="val">0.47 ×</td>
+        <td class="hint">~1–5</td>
+      </tr>
+      <tr>
+        <td><span class="metric">SMP efficiency</span></td>
+        <td class="val missing">— <span class="hint">(28.5 % en SMP)</span></td>
+        <td class="val">85.0 %</td>
+        <td class="hint">&gt;90</td>
+      </tr>
+      <tr>
+        <td><span class="metric">fork copy ratio</span></td>
+        <td class="val missing">—</td>
+        <td class="val">0.39 ×</td>
+        <td class="hint">COW ~0.3</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    En Eclipse, el salto idle→load en sleep latency (~10–50× mean, ~15× worst, miles× en pipe RT)
+    es el equivalente práctico de un <code>wake late loaded/idle</code> muy alto: el sistema sentirá stutter bajo carga.
+  </div>
+</section>
+
+</main>
+
+<footer>
+  Generado a partir de eclipse.txt + linux.txt · eclipse-bench · misma máquina (20 CPUs)
+</footer>
+
+</body>
+</html>
