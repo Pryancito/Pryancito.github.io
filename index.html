@@ -7,66 +7,79 @@
   <meta name="description" content="Eclipse OS es un sistema operativo escrito en Rust sobre un micronúcleo inspirado en Zircon, capaz de ejecutar programas de Linux sin modificarlos y con escritorio propio.">
   <meta property="og:title" content="Eclipse OS">
   <meta property="og:description" content="Un sistema operativo hecho en Rust, con escritorio propio y compatible con programas de Linux.">
-  <meta property="og:image" content="assets/shots/escritorio.webp">
+  <meta property="og:image" content="assets/shots/escritorio.jpg">
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=3">
 </head>
 <body>
-  <div class="sky" aria-hidden="true"></div>
+  <canvas id="stars" aria-hidden="true"></canvas>
+  <div class="glow glow-a" aria-hidden="true"></div>
+  <div class="glow glow-b" aria-hidden="true"></div>
 
-  <nav>
+  <nav id="nav">
     <div class="wrap">
-      <a href="#" class="brand"><img src="assets/logo.svg" alt="">Eclipse OS</a>
+      <a href="#" class="brand"><img src="assets/logo.svg" alt="">Eclipse<span>OS</span></a>
       <ul>
         <li><a href="#virtudes">Virtudes</a></li>
-        <li><a href="#escritorio">Escritorio</a></li>
-        <li><a href="#galeria">Galería</a></li>
+        <li><a href="#capturas">Capturas</a></li>
+        <li><a href="#dentro">Por dentro</a></li>
         <li><a href="#probar">Pruébalo</a></li>
         <li><a href="bench.html">Benchmarks</a></li>
       </ul>
-      <a class="btn btn-ghost btn-sm hide-sm" href="https://github.com/Pryancito/eclipse">GitHub ↗</a>
+      <a class="btn btn-ghost btn-sm" href="https://github.com/Pryancito/eclipse">GitHub ↗</a>
     </div>
   </nav>
 
+  <!-- Portada -->
   <header class="hero">
-    <div class="wrap">
-      <span class="badge">Versión 0.6 · x86_64 y arm64</span>
-      <h1>Un sistema operativo<br><span class="grad-text">nacido en Rust</span></h1>
+    <div class="eclipse" aria-hidden="true">
+      <div class="corona"></div>
+      <div class="ring ring-1"></div>
+      <div class="ring ring-2"></div>
+      <div class="ring ring-3"></div>
+      <div class="moon"></div>
+    </div>
+
+    <div class="wrap hero-text">
+      <span class="badge"><i></i> Versión 0.6 disponible · x86_64 y arm64</span>
+      <h1>El sistema operativo<br><span class="grad-text">que nace de un eclipse</span></h1>
       <p class="lead">
-        Eclipse OS es un núcleo propio, escrito en Rust seguro, que entiende a Linux:
-        arranca en segundos, ejecuta programas de Linux sin recompilarlos y trae
-        un escritorio Wayland pensado desde cero.
+        Un núcleo propio escrito en Rust seguro que habla el idioma de Linux.
+        Ejecuta tus programas sin recompilarlos y te recibe con un escritorio
+        diseñado desde cero.
       </p>
       <div class="actions">
-        <a class="btn btn-primary" href="https://github.com/Pryancito/eclipse/releases">Descargar ISO</a>
-        <a class="btn btn-ghost" href="#escritorio">Verlo funcionando</a>
+        <a class="btn btn-primary" href="https://github.com/Pryancito/eclipse/releases">Descargar la ISO</a>
+        <a class="btn btn-ghost" href="#capturas">Verlo en acción →</a>
       </div>
+    </div>
 
-      <figure class="shot-hero reveal">
-        <div class="frame">
-          <div class="bar"><i></i><i></i><i></i><span>qemu · eclipse 0.6.1</span></div>
-          <img src="assets/shots/escritorio.webp" alt="Escritorio de Eclipse OS con el fondo animado de la media luna dorada y los paneles superior e inferior" width="1920" height="1080">
-        </div>
-        <figcaption class="caption">Captura real: Eclipse OS 0.6.1 arrancado en QEMU, con su escritorio labwc y el fondo animado <code>lunarbg</code>.</figcaption>
+    <div class="wrap">
+      <figure class="screen reveal">
+        <div class="screen-bar"><i></i><i></i><i></i><span>Eclipse OS 0.6.1 · escritorio labwc</span></div>
+        <img src="assets/shots/escritorio.jpg" alt="Escritorio de Eclipse OS con el fondo animado de la media luna dorada y los paneles superior e inferior" width="1920" height="1080">
       </figure>
-
-      <div class="stats reveal">
-        <div class="stat"><b class="grad-text">100&nbsp;%</b><span>núcleo en Rust</span></div>
-        <div class="stat"><b class="grad-text">3</b><span>estilos de escritorio</span></div>
-        <div class="stat"><b class="grad-text">ELF</b><span>de Linux, sin recompilar</span></div>
-        <div class="stat"><b class="grad-text">Wayland</b><span>escritorio nativo</span></div>
-      </div>
+      <p class="caption">Captura real de Eclipse OS funcionando en QEMU.</p>
     </div>
   </header>
 
-  <main class="wrap">
+  <!-- Cifras -->
+  <div class="wrap">
+    <div class="stats reveal">
+      <div class="stat"><b>100&nbsp;%</b><span>núcleo en Rust</span></div>
+      <div class="stat"><b>ELF</b><span>de Linux sin recompilar</span></div>
+      <div class="stat"><b>3</b><span>estilos de escritorio</span></div>
+      <div class="stat"><b>3</b><span>arquitecturas</span></div>
+    </div>
+  </div>
 
+  <main>
     <!-- Virtudes -->
-    <section id="virtudes">
+    <section id="virtudes" class="wrap">
       <div class="sec-head reveal">
         <span class="kicker">Por qué Eclipse</span>
-        <h2>Pequeño por dentro, <span class="grad-text">grande por fuera</span></h2>
-        <p>Un micronúcleo moderno que no obliga a renunciar al software de siempre.</p>
+        <h2>Pequeño por dentro,<br><span class="grad-text">enorme por fuera</span></h2>
+        <p>Un micronúcleo moderno que no te obliga a renunciar al software de siempre.</p>
       </div>
       <div class="grid">
         <article class="card reveal">
@@ -77,97 +90,108 @@
         <article class="card reveal">
           <div class="ico">🐧</div>
           <h3>Habla Linux</h3>
-          <p>Implementa las llamadas al sistema de Linux siguiendo su propia documentación, así que BusyBox, Mesa, foot o labwc —compilados para Linux— se ejecutan tal cual, sin recompilar.</p>
+          <p>Implementa las llamadas al sistema de Linux siguiendo su propia documentación: BusyBox, Mesa, foot o labwc, compilados para Linux, funcionan tal cual.</p>
         </article>
         <article class="card reveal">
           <div class="ico">🌙</div>
           <h3>Escritorio propio</h3>
-          <p>Sesión Wayland con labwc y piezas nativas: el fondo animado <code>lunarbg</code>, el panel <code>lunarbar</code> y un lanzador rápido. Tres estilos: Eclipse, KDE y Windows&nbsp;11.</p>
+          <p>Sesión Wayland con labwc y piezas nativas: el fondo animado <code>lunarbg</code>, el panel <code>lunarbar</code> y un lanzador rápido.</p>
         </article>
         <article class="card reveal">
           <div class="ico">🛡️</div>
           <h3>Guardián integrado</h3>
-          <p><code>hunter</code> vive dentro del núcleo: aplica políticas tipo LSM, vigila W^X y detecta comportamientos anómalos. Todo queda registrado en <code>/proc/hunter</code>.</p>
+          <p><code>hunter</code> vive dentro del núcleo: aplica políticas tipo LSM, vigila W^X y detecta comportamientos anómalos.</p>
         </article>
         <article class="card reveal">
           <div class="ico">⚡</div>
           <h3>Arranque medido</h3>
-          <p>Cada etapa del arranque se cronometra, del firmware a <code>eclipse-init</code>. Lo que no se mide no se mejora, y aquí se mide todo.</p>
+          <p>Cada etapa del arranque se cronometra, del firmware a <code>eclipse-init</code>. Lo que no se mide no se mejora.</p>
         </article>
         <article class="card reveal">
           <div class="ico">💽</div>
           <h3>Hardware real</h3>
-          <p>Drivers propios de AHCI, NVMe, e1000e, USB y sonido HDA; pila gráfica DRM/KMS compatible con Xorg y wlroots; y un instalador que deja el sistema en tu disco.</p>
+          <p>Drivers propios de AHCI, NVMe, e1000e, USB y sonido; gráficos DRM/KMS y un instalador que lo deja en tu disco.</p>
         </article>
       </div>
     </section>
 
-    <!-- Escritorio en detalle -->
-    <section id="escritorio">
+    <!-- Escaparate de capturas -->
+    <section id="capturas" class="wrap">
       <div class="sec-head reveal">
         <span class="kicker">Así se ve</span>
         <h2>Eclipse OS, <span class="grad-text">en marcha</span></h2>
-        <p>Todas las capturas están sacadas de una máquina virtual QEMU arrancando la ISO oficial 0.6.1: solo recortadas, sin retoques.</p>
+        <p>Capturas reales de la ISO oficial 0.6.1 arrancada en QEMU. Elige una pestaña.</p>
       </div>
 
-      <div class="split reveal">
-        <div class="frame">
-          <div class="bar"><i></i><i></i><i></i><span>Alt + Espacio</span></div>
-          <img src="assets/shots/lanzador.webp" alt="Lanzador de aplicaciones de Eclipse OS con la lista de programas" loading="lazy" width="960" height="540">
+      <div class="showcase reveal">
+        <div class="tabs" role="tablist">
+          <button role="tab" class="tab active" data-shot="0">Escritorio</button>
+          <button role="tab" class="tab" data-shot="1">Lanzador</button>
+          <button role="tab" class="tab" data-shot="2">Terminal</button>
+          <button role="tab" class="tab" data-shot="3">Estilo KDE</button>
+          <button role="tab" class="tab" data-shot="4">Estilo Windows 11</button>
+          <button role="tab" class="tab" data-shot="5">Arranque</button>
         </div>
-        <div>
-          <h3>Todo a una tecla</h3>
-          <p>El lanzador aparece con <code>Alt+Espacio</code>: escribe y ejecuta. Aplicaciones, ajustes y apagado en el mismo sitio, en español.</p>
-          <ul>
-            <li>Panel superior con red, disco, temperatura y fecha</li>
-            <li>Panel inferior con tareas, CPU, memoria, volumen y teclado</li>
-            <li>Atajos al estilo de siempre: <code>Alt+Tab</code>, <code>Super+↑</code>, <code>Alt+F4</code></li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="split rev reveal">
-        <div class="frame">
-          <div class="bar"><i></i><i></i><i></i><span>foot · /proc/hunter</span></div>
-          <img src="assets/shots/terminal.webp" alt="Terminal foot mostrando uname, memoria, disco y el estado del subsistema de seguridad hunter" loading="lazy" width="1040" height="585">
-        </div>
-        <div>
-          <h3>Una terminal que no miente</h3>
-          <p><code>uname</code> dice Eclipse, la raíz vive en <strong>EclipseFS</strong> —su propio sistema de archivos— y <code>hunter</code> informa en directo de lo que vigila.</p>
-          <ul>
-            <li>Shell BusyBox y musl-libc de serie</li>
-            <li>Paquetes con <code>apt</code> desde el archivo de Ubuntu</li>
-            <li><code>/proc</code> y <code>/sys</code> compatibles con Linux</li>
-          </ul>
+        <div class="showcase-body">
+          <figure class="screen">
+            <div class="screen-bar"><i></i><i></i><i></i><span id="shot-label">escritorio</span></div>
+            <div class="shots">
+              <img class="shot active" src="assets/shots/escritorio.jpg" alt="Escritorio de Eclipse OS" width="1920" height="1080">
+              <img class="shot" src="assets/shots/lanzador.jpg" alt="Lanzador de aplicaciones de Eclipse OS" loading="lazy" width="960" height="540">
+              <img class="shot" src="assets/shots/terminal.jpg" alt="Terminal foot con uname, memoria, disco y el estado de hunter" loading="lazy" width="1040" height="585">
+              <img class="shot" src="assets/shots/estilo-kde.jpg" alt="Eclipse OS con el estilo KDE" loading="lazy" width="1920" height="1080">
+              <img class="shot" src="assets/shots/estilo-win11.jpg" alt="Eclipse OS con el estilo Windows 11" loading="lazy" width="1920" height="1080">
+              <img class="shot" src="assets/shots/arranque.jpg" alt="Pantalla de arranque de Eclipse OS" loading="lazy" width="1920" height="1080">
+            </div>
+          </figure>
+          <div class="shot-text">
+            <div class="desc active">
+              <h3>Un cielo propio</h3>
+              <p>El fondo <code>lunarbg</code> dibuja en tiempo real la media luna dorada, los anillos que giran y las estrellas. Arriba, el panel con red, disco, temperatura y fecha. Abajo, tareas, CPU, memoria y volumen.</p>
+            </div>
+            <div class="desc">
+              <h3>Todo a una tecla</h3>
+              <p>Pulsa <kbd>Alt</kbd>+<kbd>Espacio</kbd>, escribe y ejecuta. Aplicaciones, ajustes, reinicio y apagado en el mismo sitio, en español.</p>
+            </div>
+            <div class="desc">
+              <h3>Una terminal que no miente</h3>
+              <p><code>uname</code> dice Eclipse, la raíz vive en EclipseFS, su propio sistema de archivos, y <code>/proc/hunter</code> cuenta en directo lo que vigila el núcleo.</p>
+            </div>
+            <div class="desc">
+              <h3>¿Vienes de KDE?</h3>
+              <p>Con <code>eclipse-look kde</code> el panel y el lanzador adoptan los colores Breeze de Plasma. Las piezas son las mismas, solo cambia la piel.</p>
+            </div>
+            <div class="desc">
+              <h3>¿Vienes de Windows?</h3>
+              <p><code>eclipse-look win11</code> centra la barra de tareas y convierte el lanzador en un menú Inicio translúcido.</p>
+            </div>
+            <div class="desc">
+              <h3>Arranque a la vista</h3>
+              <p>El cargador <code>rboot</code> pinta el logo y la primera mitad de la barra; el núcleo la completa. Cada tramo queda cronometrado.</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- Galería -->
-    <section id="galeria">
+    <!-- Por dentro -->
+    <section id="dentro" class="wrap">
       <div class="sec-head reveal">
-        <span class="kicker">Galería</span>
-        <h2>Más capturas</h2>
-        <p>Pulsa cualquier imagen para verla en grande.</p>
+        <span class="kicker">Por dentro</span>
+        <h2>De la placa <span class="grad-text">a tu escritorio</span></h2>
+        <p>Un núcleo propio abajo y el software de Linux arriba, capa a capa.</p>
       </div>
-      <div class="gallery">
-        <figure class="reveal">
-          <div class="frame"><img src="assets/shots/arranque.webp" alt="Pantalla de arranque de Eclipse OS con el logotipo y la barra de progreso" loading="lazy" width="1920" height="1080"></div>
-          <figcaption>El arranque: rboot pinta el logo y una barra que el núcleo completa.</figcaption>
-        </figure>
-        <figure class="reveal">
-          <div class="frame"><img src="assets/shots/estilo-kde.webp" alt="Eclipse OS con el estilo KDE: barra inferior y lanzador en tonos Breeze" loading="lazy" width="1920" height="1080"></div>
-          <figcaption>Estilo KDE, con un solo comando: <code>eclipse-look kde</code>.</figcaption>
-        </figure>
-        <figure class="reveal">
-          <div class="frame"><img src="assets/shots/estilo-win11.webp" alt="Eclipse OS con el estilo Windows 11: barra centrada y menú de inicio" loading="lazy" width="1920" height="1080"></div>
-          <figcaption>Estilo Windows 11: barra centrada y menú Inicio.</figcaption>
-        </figure>
+      <div class="stack reveal">
+        <div class="layer l5"><b>Escritorio</b><span>labwc · lunarbg · lunarbar · foot · Mesa</span></div>
+        <div class="layer l4"><b>Espacio de usuario</b><span>eclipse-init · BusyBox · musl · apt</span></div>
+        <div class="layer l3"><b>Capa Linux</b><span>llamadas al sistema · /proc · /sys · DRM/KMS</span></div>
+        <div class="layer l2"><b>Micronúcleo en Rust</b><span>objetos Zircon · planificador · hunter · EclipseFS</span></div>
+        <div class="layer l1"><b>Hardware</b><span>x86_64 · arm64 · RISC‑V · UEFI con rboot</span></div>
       </div>
     </section>
 
     <!-- Pruébalo -->
-    <section id="probar">
+    <section id="probar" class="wrap">
       <div class="sec-head reveal">
         <span class="kicker">Pruébalo</span>
         <h2>En tres pasos</h2>
@@ -197,6 +221,7 @@ install-eclipse</pre>
       </div>
 
       <div class="cta reveal">
+        <div class="cta-moon" aria-hidden="true"></div>
         <h2>¿Quieres compilarlo tú?</h2>
         <p>Todo el sistema, del núcleo al escritorio, sale de un solo repositorio.</p>
         <div class="actions">
@@ -209,16 +234,15 @@ install-eclipse</pre>
 
   <footer>
     <div class="wrap">
-      <span>Eclipse OS · software libre</span>
-      <span><a href="https://github.com/Pryancito/eclipse">github.com/Pryancito/eclipse</a></span>
+      <span class="brand"><img src="assets/logo.svg" alt="">Eclipse<span>OS</span></span>
+      <span>Software libre · <a href="https://github.com/Pryancito/eclipse">github.com/Pryancito/eclipse</a></span>
     </div>
   </footer>
 
   <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Captura ampliada">
     <img alt="">
-    <p></p>
   </div>
 
-  <script src="js/app.js"></script>
+  <script src="js/app.js?v=3"></script>
 </body>
 </html>
