@@ -37,7 +37,7 @@ addEventListener('resize', () => { resize(); if (still) draw(); });
 
 // Barra de navegación opaca al hacer scroll
 const nav = document.getElementById('nav');
-const onScroll = () => nav.classList.toggle('scrolled', scrollY > 20);
+const onScroll = () => nav && nav.classList.toggle('scrolled', scrollY > 20);
 addEventListener('scroll', onScroll, { passive: true });
 onScroll();
 
@@ -68,6 +68,7 @@ const descs = [...document.querySelectorAll('.desc')];
 const label = document.getElementById('shot-label');
 let current = 0;
 let timer;
+const box = document.getElementById('lightbox');
 
 function show(i) {
   current = i;
@@ -83,18 +84,19 @@ function autoplay() {
 }
 
 tabs.forEach((t, i) => t.addEventListener('click', () => { show(i); autoplay(); }));
-autoplay();
+if (tabs.length) autoplay();
 
 // Visor a pantalla completa
-const box = document.getElementById('lightbox');
-const boxImg = box.querySelector('img');
-document.querySelector('.shots').addEventListener('click', () => {
-  boxImg.src = shots[current].src;
-  boxImg.alt = shots[current].alt;
-  box.classList.add('open');
-  clearInterval(timer);
-});
-box.addEventListener('click', () => { box.classList.remove('open'); autoplay(); });
-addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && box.classList.contains('open')) { box.classList.remove('open'); autoplay(); }
-});
+if (box) {
+  const boxImg = box.querySelector('img');
+  document.querySelector('.shots').addEventListener('click', () => {
+    boxImg.src = shots[current].src;
+    boxImg.alt = shots[current].alt;
+    box.classList.add('open');
+    clearInterval(timer);
+  });
+  box.addEventListener('click', () => { box.classList.remove('open'); autoplay(); });
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && box.classList.contains('open')) { box.classList.remove('open'); autoplay(); }
+  });
+}
