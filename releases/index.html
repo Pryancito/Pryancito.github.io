@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Descargas — Eclipse OS</title>
+  <meta name="description" content="Descarga Eclipse OS: imágenes ISO de escritorio y mínimas para x86_64 y arm64, y versiones anteriores.">
+  <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/style.css?v=4">
+</head>
+<body>
+  <canvas id="stars" aria-hidden="true"></canvas>
+  <div class="glow glow-a" aria-hidden="true"></div>
+  <div class="glow glow-b" aria-hidden="true"></div>
+
+  <nav id="nav">
+    <div class="wrap">
+      <a href="../" class="brand"><img src="../assets/logo.svg" alt="">Eclipse<span>OS</span></a>
+      <ul>
+        <li><a href="../#virtudes">Virtudes</a></li>
+        <li><a href="../#capturas">Capturas</a></li>
+        <li><a href="./" aria-current="page">Descargas</a></li>
+        <li><a href="../bench.html">Benchmarks</a></li>
+      </ul>
+      <a class="btn btn-ghost btn-sm" href="https://github.com/Pryancito/eclipse">GitHub ↗</a>
+    </div>
+  </nav>
+
+  <main class="wrap">
+    <header class="sec-head page-head reveal">
+      <span class="kicker">Descargas</span>
+      <h2>Consigue <span class="grad-text">Eclipse OS</span></h2>
+      <p>Imágenes ISO con arranque UEFI. Descomprímelas con <code>gunzip</code> antes de usarlas.</p>
+    </header>
+
+    <!-- Versión actual -->
+    <section class="release-current reveal">
+      <div class="release-top">
+        <div>
+          <span class="tag-latest">Última versión</span>
+          <h3>Eclipse OS v0.6.1</h3>
+          <p class="muted">Publicada el 14 de octubre de 2026</p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="https://github.com/Pryancito/eclipse/releases/tag/v0.6.1">Notas de la versión ↗</a>
+      </div>
+
+      <div class="dl-grid">
+        <a class="dl featured" href="https://github.com/Pryancito/eclipse/releases/download/v0.6.1/eclipse-desktop-x86_64.iso.gz">
+          <span class="dl-arch">x86_64 · PC</span>
+          <b>Escritorio</b>
+          <span class="dl-desc">labwc, Mesa, Firefox y XFCE. La experiencia completa, con instalador.</span>
+          <span class="dl-meta">eclipse-desktop-x86_64.iso.gz · 2,0 GB</span>
+        </a>
+        <a class="dl" href="https://github.com/Pryancito/eclipse/releases/download/v0.6.1/eclipse-minimal-x86_64.iso.gz">
+          <span class="dl-arch">x86_64 · PC</span>
+          <b>Mínima</b>
+          <span class="dl-desc">Consola con BusyBox, red e instalador. Sin escritorio.</span>
+          <span class="dl-meta">eclipse-minimal-x86_64.iso.gz · 637 MB</span>
+        </a>
+        <a class="dl" href="https://github.com/Pryancito/eclipse/releases/download/v0.6.1/eclipse-desktop-aarch64.iso.gz">
+          <span class="dl-arch">arm64</span>
+          <b>Escritorio</b>
+          <span class="dl-desc">Para ARM de 64 bits. Arranca en vivo en una sesión de consola, sin instalador.</span>
+          <span class="dl-meta">eclipse-desktop-aarch64.iso.gz · 726 MB</span>
+        </a>
+        <a class="dl" href="https://github.com/Pryancito/eclipse/releases/download/v0.6.1/eclipse-minimal-aarch64.iso.gz">
+          <span class="dl-arch">arm64</span>
+          <b>Mínima</b>
+          <span class="dl-desc">Consola para ARM de 64 bits. Arráncala con 1 GB de memoria, no con 4.</span>
+          <span class="dl-meta">eclipse-minimal-aarch64.iso.gz · 63 MB</span>
+        </a>
+      </div>
+
+      <pre><span class="c"># x86_64: descomprimir y arrancar en QEMU (UEFI, 4 GB o más)</span>
+gunzip eclipse-desktop-x86_64.iso.gz
+qemu-system-x86_64 -machine q35 -m 8G -smp 4 -vga virtio \
+  -drive if=pflash,format=raw,readonly=on,file=OVMF.fd \
+  -cdrom eclipse-desktop-x86_64.iso</pre>
+    </section>
+
+    <!-- Versiones anteriores -->
+    <section class="older reveal">
+      <h3>Versiones anteriores</h3>
+      <div class="table">
+        <div class="row">
+          <div><b>v0.6.0</b><span class="muted">14 oct 2026</span></div>
+          <div class="links">
+            <a href="https://github.com/Pryancito/eclipse/releases/download/v0.6.0/eclipse-desktop-x86_64.iso.gz">Escritorio x86_64</a>
+            <a href="https://github.com/Pryancito/eclipse/releases/download/v0.6.0/eclipse-minimal-x86_64.iso.gz">Mínima x86_64</a>
+            <a href="https://github.com/Pryancito/eclipse/releases/download/v0.6.0/eclipse-desktop-aarch64.iso.gz">Escritorio arm64</a>
+            <a href="https://github.com/Pryancito/eclipse/releases/download/v0.6.0/eclipse-minimal-aarch64.iso.gz">Mínima arm64</a>
+          </div>
+        </div>
+        <div class="row">
+          <div><b>v0.3.0</b><span class="muted">11 jun 2026</span></div>
+          <div class="links"><a href="https://github.com/Pryancito/eclipse/releases/download/v0.3.0/eclipse-x86_64.iso">ISO x86_64</a></div>
+        </div>
+        <div class="row">
+          <div><b>v0.3.0-beta2</b><span class="muted">10 jun 2026</span></div>
+          <div class="links"><a href="https://github.com/Pryancito/eclipse/releases/download/v0.3.0-beta2/eclipse-x86_64.iso">ISO x86_64</a></div>
+        </div>
+        <div class="row">
+          <div><b>v0.3.0-alpha3</b><span class="muted">31 may 2026</span></div>
+          <div class="links"><a href="https://github.com/Pryancito/eclipse/releases/download/v0.3.0-alpha3/eclipse-x86_64.iso">ISO x86_64</a></div>
+        </div>
+        <div class="row">
+          <div><b>v0.3.0-alpha2</b><span class="muted">24 may 2026</span></div>
+          <div class="links"><a href="https://github.com/Pryancito/eclipse/releases/download/v0.3.0-alpha2/eclipse-x86_64.iso">ISO x86_64</a></div>
+        </div>
+        <div class="row">
+          <div><b>v0.3.0-alpha</b><span class="muted">21 may 2026</span></div>
+          <div class="links">
+            <a href="https://github.com/Pryancito/eclipse/releases/download/v0.3.0-alpha/eclipse-x86_64.iso">ISO</a>
+            <a href="https://github.com/Pryancito/eclipse/releases/download/v0.3.0-alpha/eclipse-x86_64.img">IMG</a>
+            <a href="https://github.com/Pryancito/eclipse/releases/download/v0.3.0-alpha/eclipse-x86_64.qcow2">QCOW2</a>
+          </div>
+        </div>
+      </div>
+      <p class="muted small">Todas las versiones y sus notas en <a class="link" href="https://github.com/Pryancito/eclipse/releases">GitHub Releases</a>.</p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span class="brand"><img src="../assets/logo.svg" alt="">Eclipse<span>OS</span></span>
+      <span>Software libre · <a href="https://github.com/Pryancito/eclipse">github.com/Pryancito/eclipse</a></span>
+    </div>
+  </footer>
+
+  <script src="../js/app.js?v=4"></script>
+</body>
+</html>
