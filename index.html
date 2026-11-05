@@ -57,8 +57,8 @@
 
     <div class="wrap">
       <figure class="screen reveal">
-        <div class="screen-bar"><i></i><i></i><i></i><span>Eclipse OS 0.6.1 · escritorio labwc</span></div>
-        <img src="assets/shots/escritorio.jpg" alt="Escritorio de Eclipse OS con el fondo animado de la media luna dorada y los paneles superior e inferior" width="1920" height="1080">
+        <div class="screen-bar"><i></i><i></i><i></i><span>Eclipse OS 0.7.1 · escritorio labwc</span></div>
+        <img src="assets/shots/escritorio.jpg" alt="Escritorio de Eclipse OS con el eclipse dorado del fondo animado y los paneles superior e inferior" width="1920" height="1080">
       </figure>
       <p class="caption">Captura real de Eclipse OS funcionando en QEMU.</p>
     </div>
@@ -121,7 +121,7 @@
       <div class="sec-head reveal">
         <span class="kicker">Así se ve</span>
         <h2>Eclipse OS, <span class="grad-text">en marcha</span></h2>
-        <p>Capturas reales de la ISO oficial 0.6.1 arrancada en QEMU. Elige una pestaña.</p>
+        <p>Capturas reales de Eclipse OS 0.7.1, compilado desde el código actual y arrancado en QEMU. Elige una pestaña.</p>
       </div>
 
       <div class="showcase reveal">
@@ -129,9 +129,10 @@
           <button role="tab" class="tab active" data-shot="0">Escritorio</button>
           <button role="tab" class="tab" data-shot="1">Lanzador</button>
           <button role="tab" class="tab" data-shot="2">Terminal</button>
-          <button role="tab" class="tab" data-shot="3">Estilo KDE</button>
-          <button role="tab" class="tab" data-shot="4">Estilo Windows 11</button>
-          <button role="tab" class="tab" data-shot="5">Arranque</button>
+          <button role="tab" class="tab" data-shot="3">Monitor</button>
+          <button role="tab" class="tab" data-shot="4">Estilo KDE</button>
+          <button role="tab" class="tab" data-shot="5">Estilo Windows 11</button>
+          <button role="tab" class="tab" data-shot="6">Arranque</button>
         </div>
         <div class="showcase-body">
           <figure class="screen">
@@ -140,6 +141,7 @@
               <img class="shot active" src="assets/shots/escritorio.jpg" alt="Escritorio de Eclipse OS" width="1920" height="1080">
               <img class="shot" src="assets/shots/lanzador.jpg" alt="Lanzador de aplicaciones de Eclipse OS" loading="lazy" width="960" height="540">
               <img class="shot" src="assets/shots/terminal.jpg" alt="Terminal foot con uname, memoria, disco y el estado de hunter" loading="lazy" width="1040" height="585">
+              <img class="shot" src="assets/shots/monitor.jpg" alt="Monitor del sistema lunarmon con CPU por núcleo, memoria, red, disco y la lista de procesos" loading="lazy" width="1440" height="810">
               <img class="shot" src="assets/shots/estilo-kde.jpg" alt="Eclipse OS con el estilo KDE" loading="lazy" width="1920" height="1080">
               <img class="shot" src="assets/shots/estilo-win11.jpg" alt="Eclipse OS con el estilo Windows 11" loading="lazy" width="1920" height="1080">
               <img class="shot" src="assets/shots/arranque.jpg" alt="Pantalla de arranque de Eclipse OS" loading="lazy" width="1920" height="1080">
@@ -148,7 +150,7 @@
           <div class="shot-text">
             <div class="desc active">
               <h3>Un cielo propio</h3>
-              <p>El fondo <code>lunarbg</code> dibuja en tiempo real la media luna dorada, los anillos que giran y las estrellas. Arriba, el panel con red, disco, temperatura y fecha. Abajo, tareas, CPU, memoria y volumen.</p>
+              <p>El fondo <code>lunarbg</code> dibuja en tiempo real un eclipse con la hora, la fecha y la fase de la Luna de verdad. Arriba, <code>lunarbar</code> con los cuatro escritorios, CPU, memoria, red, temperatura y calendario. Abajo, tareas, volumen, avisos y el escudo de hunter.</p>
             </div>
             <div class="desc">
               <h3>Todo a una tecla</h3>
@@ -157,6 +159,10 @@
             <div class="desc">
               <h3>Una terminal que no miente</h3>
               <p><code>uname</code> dice Eclipse, la raíz vive en EclipseFS, su propio sistema de archivos, y <code>/proc/hunter</code> cuenta en directo lo que vigila el núcleo.</p>
+            </div>
+            <div class="desc">
+              <h3>Todo bajo control</h3>
+              <p><kbd>Ctrl</kbd>+<kbd>Mayús</kbd>+<kbd>Esc</kbd> abre <code>lunarmon</code>: carga por núcleo, memoria, red, disco, procesos y servicios de arranque. Y si un programa quiere salir a la red sin permiso, hunter te lo pregunta en un aviso.</p>
             </div>
             <div class="desc">
               <h3>¿Vienes de KDE?</h3>
