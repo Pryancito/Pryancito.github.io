@@ -61,6 +61,7 @@ nav ul a:hover { color: var(--text); }
 .lang a { padding: 4px 10px; border-radius: 999px; color: var(--muted); transition: color .2s, background .2s; }
 .lang a:hover { color: var(--text); }
 .lang a[aria-current] { background: rgba(255,255,255,.1); color: var(--text); }
+@media (max-width: 380px) { .nav-end .btn { display: none; } }
 
 .btn {
   display: inline-flex; align-items: center; gap: 8px;
