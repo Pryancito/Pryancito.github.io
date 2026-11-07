@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eclipse OS — an operating system built in Rust</title>
+  <meta name="description" content="Eclipse OS is an operating system written in Rust on a Zircon-inspired microkernel. It runs unmodified Linux programs and ships its own desktop.">
+  <meta property="og:title" content="Eclipse OS">
+  <meta property="og:description" content="An operating system built in Rust, with its own desktop and support for Linux programs.">
+  <meta property="og:image" content="../assets/shots/escritorio.jpg">
+  <meta property="og:locale" content="en_US">
+  <link rel="alternate" hreflang="es" href="https://pryancito.github.io/">
+  <link rel="alternate" hreflang="en" href="https://pryancito.github.io/en/">
+  <link rel="alternate" hreflang="x-default" href="https://pryancito.github.io/">
+  <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/style.css?v=5">
+</head>
+<body>
+  <canvas id="stars" aria-hidden="true"></canvas>
+  <div class="glow glow-a" aria-hidden="true"></div>
+  <div class="glow glow-b" aria-hidden="true"></div>
+
+  <nav id="nav">
+    <div class="wrap">
+      <a href="#" class="brand"><img src="../assets/logo.svg" alt="">Eclipse<span>OS</span></a>
+      <ul>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#screenshots">Screenshots</a></li>
+        <li><a href="#inside">Under the hood</a></li>
+        <li><a href="#try">Try it</a></li>
+        <li><a href="releases/">Downloads</a></li>
+        <li><a href="../bench.html" hreflang="es" title="Report in Spanish">Benchmarks</a></li>
+      </ul>
+      <div class="nav-end">
+        <div class="lang" aria-label="Language / Idioma"><a href="../" hreflang="es" lang="es">ES</a><a href="./" hreflang="en" lang="en" aria-current="true">EN</a></div>
+        <a class="btn btn-ghost btn-sm" href="https://github.com/Pryancito/eclipse">GitHub ↗</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="hero">
+    <div class="eclipse" aria-hidden="true">
+      <div class="corona"></div>
+      <div class="ring ring-1"></div>
+      <div class="ring ring-2"></div>
+      <div class="ring ring-3"></div>
+      <div class="moon"></div>
+    </div>
+
+    <div class="wrap hero-text">
+      <span class="badge"><i></i> Version 0.7 available · x86_64 and arm64</span>
+      <h1>The operating system<br><span class="grad-text">born from an eclipse</span></h1>
+      <p class="lead">
+        A kernel of its own, written in safe Rust, that speaks Linux.
+        Run your programs without recompiling them, on a desktop
+        designed from scratch.
+      </p>
+      <div class="actions">
+        <a class="btn btn-primary" href="releases/">Download the ISO</a>
+        <a class="btn btn-ghost" href="#screenshots">See it in action →</a>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <figure class="screen reveal">
+        <div class="screen-bar"><i></i><i></i><i></i><span>Eclipse OS 0.7.1 · labwc desktop</span></div>
+        <img src="../assets/shots/escritorio.jpg" alt="Eclipse OS desktop with the golden eclipse of the animated wallpaper and the top and bottom panels" width="1920" height="1080">
+      </figure>
+      <p class="caption">A real screenshot of Eclipse OS running in QEMU.</p>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <div class="wrap">
+    <div class="stats reveal">
+      <div class="stat"><b>100&nbsp;%</b><span>Rust kernel</span></div>
+      <div class="stat"><b>ELF</b><span>Linux binaries, no recompiling</span></div>
+      <div class="stat"><b>3</b><span>desktop styles</span></div>
+      <div class="stat"><b>3</b><span>architectures</span></div>
+    </div>
+  </div>
+
+  <main>
+    <!-- Features -->
+    <section id="features" class="wrap">
+      <div class="sec-head reveal">
+        <span class="kicker">Why Eclipse</span>
+        <h2>Small on the inside,<br><span class="grad-text">huge on the outside</span></h2>
+        <p>A modern microkernel that doesn't make you give up the software you already use.</p>
+      </div>
+      <div class="grid">
+        <article class="card reveal">
+          <div class="ico">🦀</div>
+          <h3>Safe by design</h3>
+          <p>The kernel is written in Rust: no buffer overflows or dangling pointers at the heart of the system. It is a reimplementation of the Zircon microkernel.</p>
+        </article>
+        <article class="card reveal">
+          <div class="ico">🐧</div>
+          <h3>Speaks Linux</h3>
+          <p>It implements the Linux system calls following Linux's own documentation: BusyBox, Mesa, foot or labwc, built for Linux, work as they are.</p>
+        </article>
+        <article class="card reveal">
+          <div class="ico">🌙</div>
+          <h3>Its own desktop</h3>
+          <p>A Wayland session with labwc and native pieces: the animated <code>lunarbg</code> wallpaper, the <code>lunarbar</code> panel and a quick launcher.</p>
+        </article>
+        <article class="card reveal">
+          <div class="ico">🛡️</div>
+          <h3>Built-in guardian</h3>
+          <p><code>hunter</code> lives inside the kernel: it enforces LSM-style policies, watches W^X and detects anomalous behaviour.</p>
+        </article>
+        <article class="card reveal">
+          <div class="ico">⚡</div>
+          <h3>Measured boot</h3>
+          <p>Every boot stage is timed, from the firmware to <code>eclipse-init</code>. What isn't measured can't be improved.</p>
+        </article>
+        <article class="card reveal">
+          <div class="ico">💽</div>
+          <h3>Real hardware</h3>
+          <p>Its own AHCI, NVMe, e1000e, USB and sound drivers; DRM/KMS graphics and an installer that puts it on your disk.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Screenshot showcase -->
+    <section id="screenshots" class="wrap">
+      <div class="sec-head reveal">
+        <span class="kicker">How it looks</span>
+        <h2>Eclipse OS, <span class="grad-text">up and running</span></h2>
+        <p>Real screenshots of Eclipse OS 0.7.1, built from the current code and booted in QEMU. Pick a tab.</p>
+      </div>
+
+      <div class="showcase reveal">
+        <div class="tabs" role="tablist">
+          <button role="tab" class="tab active" data-shot="0">Desktop</button>
+          <button role="tab" class="tab" data-shot="1">Launcher</button>
+          <button role="tab" class="tab" data-shot="2">Terminal</button>
+          <button role="tab" class="tab" data-shot="3">Monitor</button>
+          <button role="tab" class="tab" data-shot="4">KDE style</button>
+          <button role="tab" class="tab" data-shot="5">Windows 11 style</button>
+          <button role="tab" class="tab" data-shot="6">Boot</button>
+        </div>
+        <div class="showcase-body">
+          <figure class="screen">
+            <div class="screen-bar"><i></i><i></i><i></i><span id="shot-label">desktop</span></div>
+            <div class="shots">
+              <img class="shot active" src="../assets/shots/escritorio.jpg" alt="Eclipse OS desktop" width="1920" height="1080">
+              <img class="shot" src="../assets/shots/lanzador.jpg" alt="Eclipse OS application launcher" loading="lazy" width="960" height="540">
+              <img class="shot" src="../assets/shots/terminal.jpg" alt="foot terminal showing uname, memory, disk and hunter status" loading="lazy" width="1040" height="585">
+              <img class="shot" src="../assets/shots/monitor.jpg" alt="lunarmon system monitor with per-core CPU, memory, network, disk and the process list" loading="lazy" width="1440" height="810">
+              <img class="shot" src="../assets/shots/estilo-kde.jpg" alt="Eclipse OS with the KDE style" loading="lazy" width="1920" height="1080">
+              <img class="shot" src="../assets/shots/estilo-win11.jpg" alt="Eclipse OS with the Windows 11 style" loading="lazy" width="1920" height="1080">
+              <img class="shot" src="../assets/shots/arranque.jpg" alt="Eclipse OS boot screen" loading="lazy" width="1920" height="1080">
+            </div>
+          </figure>
+          <div class="shot-text">
+            <div class="desc active">
+              <h3>A sky of its own</h3>
+              <p>The <code>lunarbg</code> wallpaper draws an eclipse in real time with the actual time, date and phase of the Moon. At the top, <code>lunarbar</code> with the four workspaces, CPU, memory, network, temperature and calendar. At the bottom, tasks, volume, notifications and hunter's shield.</p>
+            </div>
+            <div class="desc">
+              <h3>Everything one key away</h3>
+              <p>Press <kbd>Alt</kbd>+<kbd>Space</kbd>, type and run. Apps, settings, restart and shutdown, all in the same place.</p>
+            </div>
+            <div class="desc">
+              <h3>A terminal that tells the truth</h3>
+              <p><code>uname</code> says Eclipse, the root lives on EclipseFS, its own file system, and <code>/proc/hunter</code> shows live what the kernel is watching.</p>
+            </div>
+            <div class="desc">
+              <h3>Everything under control</h3>
+              <p><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Esc</kbd> opens <code>lunarmon</code>: per-core load, memory, network, disk, processes and boot services. And if a program tries to reach the network without permission, hunter asks you in a notification.</p>
+            </div>
+            <div class="desc">
+              <h3>Coming from KDE?</h3>
+              <p>With <code>eclipse-look kde</code> the panel and launcher take on Plasma's Breeze colours. The pieces are the same; only the skin changes.</p>
+            </div>
+            <div class="desc">
+              <h3>Coming from Windows?</h3>
+              <p><code>eclipse-look win11</code> centres the taskbar and turns the launcher into a translucent Start menu.</p>
+            </div>
+            <div class="desc">
+              <h3>Boot in plain sight</h3>
+              <p>The <code>rboot</code> loader draws the logo and the first half of the progress bar; the kernel finishes it. Every stretch is timed.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Under the hood -->
+    <section id="inside" class="wrap">
+      <div class="sec-head reveal">
+        <span class="kicker">Under the hood</span>
+        <h2>From the board <span class="grad-text">to your desktop</span></h2>
+        <p>Its own kernel below and Linux software above, layer by layer.</p>
+      </div>
+      <div class="stack reveal">
+        <div class="layer l5"><b>Desktop</b><span>labwc · lunarbg · lunarbar · foot · Mesa</span></div>
+        <div class="layer l4"><b>User space</b><span>eclipse-init · BusyBox · musl · apt</span></div>
+        <div class="layer l3"><b>Linux layer</b><span>system calls · /proc · /sys · DRM/KMS</span></div>
+        <div class="layer l2"><b>Rust microkernel</b><span>Zircon objects · scheduler · hunter · EclipseFS</span></div>
+        <div class="layer l1"><b>Hardware</b><span>x86_64 · arm64 · RISC‑V · UEFI with rboot</span></div>
+      </div>
+    </section>
+
+    <!-- Try it -->
+    <section id="try" class="wrap">
+      <div class="sec-head reveal">
+        <span class="kicker">Try it</span>
+        <h2>In three steps</h2>
+        <p>A virtual machine is all you need. If you like it, the installer puts it on your disk.</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <h3>Download the ISO</h3>
+          <p>Pick desktop or minimal, for x86_64 or arm64, in <a class="link" href="releases/">Downloads</a>.</p>
+          <pre>eclipse-desktop-x86_64.iso.gz</pre>
+        </div>
+        <div class="step reveal">
+          <h3>Boot it in QEMU</h3>
+          <p>It needs UEFI firmware (OVMF) and at least 4&nbsp;GB of memory.</p>
+          <pre>gunzip eclipse-desktop-x86_64.iso.gz
+qemu-system-x86_64 -machine q35 \
+  -m 8G -smp 4 -vga virtio \
+  -drive if=pflash,format=raw,readonly=on,file=OVMF.fd \
+  -cdrom eclipse-desktop-x86_64.iso</pre>
+        </div>
+        <div class="step reveal">
+          <h3>Install it</h3>
+          <p>From the live console, the installer walks you through the rest.</p>
+          <pre><span class="c"># with a SATA or NVMe disk attached</span>
+install-eclipse</pre>
+        </div>
+      </div>
+
+      <div class="cta reveal">
+        <div class="cta-moon" aria-hidden="true"></div>
+        <h2>Want to build it yourself?</h2>
+        <p>The whole system, from the kernel to the desktop, comes from a single repository.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="https://github.com/Pryancito/eclipse">View the code</a>
+          <a class="btn btn-ghost" href="../bench.html" hreflang="es">Eclipse vs Linux (in Spanish)</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span class="brand"><img src="../assets/logo.svg" alt="">Eclipse<span>OS</span></span>
+      <span>Free software · <a href="https://github.com/Pryancito/eclipse">github.com/Pryancito/eclipse</a></span>
+    </div>
+  </footer>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Enlarged screenshot">
+    <img alt="">
+  </div>
+
+  <script src="../js/app.js?v=5"></script>
+</body>
+</html>

@@ -8,8 +8,11 @@
   <meta property="og:title" content="Eclipse OS">
   <meta property="og:description" content="Un sistema operativo hecho en Rust, con escritorio propio y compatible con programas de Linux.">
   <meta property="og:image" content="assets/shots/escritorio.jpg">
+  <link rel="alternate" hreflang="es" href="https://pryancito.github.io/">
+  <link rel="alternate" hreflang="en" href="https://pryancito.github.io/en/">
+  <link rel="alternate" hreflang="x-default" href="https://pryancito.github.io/">
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css?v=4">
+  <link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
   <canvas id="stars" aria-hidden="true"></canvas>
@@ -27,7 +30,10 @@
         <li><a href="releases/">Descargas</a></li>
         <li><a href="bench.html">Benchmarks</a></li>
       </ul>
-      <a class="btn btn-ghost btn-sm" href="https://github.com/Pryancito/eclipse">GitHub ↗</a>
+      <div class="nav-end">
+        <div class="lang" aria-label="Idioma / Language"><a href="./" hreflang="es" lang="es" aria-current="true">ES</a><a href="en/" hreflang="en" lang="en">EN</a></div>
+        <a class="btn btn-ghost btn-sm" href="https://github.com/Pryancito/eclipse">GitHub ↗</a>
+      </div>
     </div>
   </nav>
 
@@ -250,6 +256,6 @@ install-eclipse</pre>
     <img alt="">
   </div>
 
-  <script src="js/app.js?v=4"></script>
+  <script src="js/app.js?v=5"></script>
 </body>
 </html>
