@@ -36,7 +36,7 @@
     <header class="sec-head page-head reveal">
       <span class="kicker">Downloads</span>
       <h2>Get <span class="grad-text">Eclipse OS</span></h2>
-      <p>UEFI-bootable ISO images. Unpack them with <code>gunzip</code> before use.</p>
+      <p>UEFI-bootable ISO images. Write or boot them as they are, no unpacking needed.</p>
     </header>
 
     <!-- Current release -->
@@ -44,41 +44,40 @@
       <div class="release-top">
         <div>
           <span class="tag-latest">Latest release</span>
-          <h3>Eclipse OS v0.6.1</h3>
-          <p class="muted">Released on October 14, 2026</p>
+          <h3>Eclipse OS v0.7.2</h3>
+          <p class="muted">Released on November 16, 2026</p>
         </div>
-        <a class="btn btn-ghost btn-sm" href="https://github.com/Pryancito/eclipse/releases/tag/v0.6.1">Release notes ↗</a>
+        <a class="btn btn-ghost btn-sm" href="https://github.com/Pryancito/eclipse/releases/tag/v0.7.2">Release notes ↗</a>
       </div>
 
       <div class="dl-grid">
-        <a class="dl featured" href="https://github.com/Pryancito/eclipse/releases/download/v0.6.1/eclipse-desktop-x86_64.iso.gz">
+        <a class="dl featured" href="https://eclipse-os.dev/releases/0.7.2/eclipse-desktop-x86_64.iso">
           <span class="dl-arch">x86_64 · PC</span>
           <b>Desktop</b>
           <span class="dl-desc">labwc, Mesa, Firefox and XFCE. The full experience, with the installer.</span>
-          <span class="dl-meta">eclipse-desktop-x86_64.iso.gz · 2.0 GB</span>
+          <span class="dl-meta">eclipse-desktop-x86_64.iso · 5.2 GB</span>
         </a>
-        <a class="dl" href="https://github.com/Pryancito/eclipse/releases/download/v0.6.1/eclipse-minimal-x86_64.iso.gz">
+        <a class="dl" href="https://eclipse-os.dev/releases/0.7.2/eclipse-minimal-x86_64.iso">
           <span class="dl-arch">x86_64 · PC</span>
           <b>Minimal</b>
           <span class="dl-desc">Console with BusyBox, networking and the installer. No desktop.</span>
-          <span class="dl-meta">eclipse-minimal-x86_64.iso.gz · 637 MB</span>
+          <span class="dl-meta">eclipse-minimal-x86_64.iso · 2.7 GB</span>
         </a>
-        <a class="dl" href="https://github.com/Pryancito/eclipse/releases/download/v0.6.1/eclipse-desktop-aarch64.iso.gz">
+        <a class="dl" href="https://eclipse-os.dev/releases/0.7.2/eclipse-desktop-aarch64.iso">
           <span class="dl-arch">arm64</span>
           <b>Desktop</b>
           <span class="dl-desc">For 64-bit ARM. Boots live into a console session, no installer.</span>
-          <span class="dl-meta">eclipse-desktop-aarch64.iso.gz · 726 MB</span>
+          <span class="dl-meta">eclipse-desktop-aarch64.iso · 6.1 GB</span>
         </a>
-        <a class="dl" href="https://github.com/Pryancito/eclipse/releases/download/v0.6.1/eclipse-minimal-aarch64.iso.gz">
+        <a class="dl" href="https://eclipse-os.dev/releases/0.7.2/eclipse-minimal-aarch64.iso">
           <span class="dl-arch">arm64</span>
           <b>Minimal</b>
           <span class="dl-desc">Console for 64-bit ARM. Boot it with 1 GB of memory, not 4.</span>
-          <span class="dl-meta">eclipse-minimal-aarch64.iso.gz · 63 MB</span>
+          <span class="dl-meta">eclipse-minimal-aarch64.iso · 1.2 GB</span>
         </a>
       </div>
 
-      <pre><span class="c"># x86_64: unpack and boot in QEMU (UEFI, 4 GB or more)</span>
-gunzip eclipse-desktop-x86_64.iso.gz
+      <pre><span class="c"># x86_64: boot in QEMU (UEFI, 4 GB or more)</span>
 qemu-system-x86_64 -machine q35 -m 8G -smp 4 -vga virtio \
   -drive if=pflash,format=raw,readonly=on,file=OVMF.fd \
   -cdrom eclipse-desktop-x86_64.iso</pre>
@@ -88,6 +87,15 @@ qemu-system-x86_64 -machine q35 -m 8G -smp 4 -vga virtio \
     <section class="older reveal">
       <h3>Older releases</h3>
       <div class="table">
+        <div class="row">
+          <div><b>v0.6.1</b><span class="muted">Oct 14, 2026</span></div>
+          <div class="links">
+            <a href="https://github.com/Pryancito/eclipse/releases/download/v0.6.1/eclipse-desktop-x86_64.iso.gz">Desktop x86_64</a>
+            <a href="https://github.com/Pryancito/eclipse/releases/download/v0.6.1/eclipse-minimal-x86_64.iso.gz">Minimal x86_64</a>
+            <a href="https://github.com/Pryancito/eclipse/releases/download/v0.6.1/eclipse-desktop-aarch64.iso.gz">Desktop arm64</a>
+            <a href="https://github.com/Pryancito/eclipse/releases/download/v0.6.1/eclipse-minimal-aarch64.iso.gz">Minimal arm64</a>
+          </div>
+        </div>
         <div class="row">
           <div><b>v0.6.0</b><span class="muted">Oct 14, 2026</span></div>
           <div class="links">

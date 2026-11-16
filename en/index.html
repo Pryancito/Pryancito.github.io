@@ -49,7 +49,7 @@
     </div>
 
     <div class="wrap hero-text">
-      <span class="badge"><i></i> Version 0.7 available · x86_64 and arm64</span>
+      <span class="badge"><i></i> Version 0.7.2 available · x86_64 and arm64</span>
       <h1>The operating system<br><span class="grad-text">born from an eclipse</span></h1>
       <p class="lead">
         A kernel of its own, written in safe Rust, that speaks Linux.
@@ -64,7 +64,7 @@
 
     <div class="wrap">
       <figure class="screen reveal">
-        <div class="screen-bar"><i></i><i></i><i></i><span>Eclipse OS 0.7.1 · labwc desktop</span></div>
+        <div class="screen-bar"><i></i><i></i><i></i><span>Eclipse OS 0.7.2 · labwc desktop</span></div>
         <img src="../assets/shots/escritorio.jpg" alt="Eclipse OS desktop with the golden eclipse of the animated wallpaper and the top and bottom panels" width="1920" height="1080">
       </figure>
       <p class="caption">A real screenshot of Eclipse OS running in QEMU.</p>
@@ -128,7 +128,7 @@
       <div class="sec-head reveal">
         <span class="kicker">How it looks</span>
         <h2>Eclipse OS, <span class="grad-text">up and running</span></h2>
-        <p>Real screenshots of Eclipse OS 0.7.1, built from the current code and booted in QEMU. Pick a tab.</p>
+        <p>Real screenshots of Eclipse OS 0.7.2, built from the current code and booted in QEMU. Pick a tab.</p>
       </div>
 
       <div class="showcase reveal">
@@ -147,7 +147,7 @@
             <div class="shots">
               <img class="shot active" src="../assets/shots/escritorio.jpg" alt="Eclipse OS desktop" width="1920" height="1080">
               <img class="shot" src="../assets/shots/lanzador.jpg" alt="Eclipse OS application launcher" loading="lazy" width="960" height="540">
-              <img class="shot" src="../assets/shots/terminal.jpg" alt="foot terminal showing uname, memory, disk and hunter status" loading="lazy" width="1040" height="585">
+              <img class="shot" src="../assets/shots/terminal.jpg" alt="foot terminal showing uname, version, memory, disk and hunter status" loading="lazy" width="1040" height="585">
               <img class="shot" src="../assets/shots/monitor.jpg" alt="lunarmon system monitor with per-core CPU, memory, network, disk and the process list" loading="lazy" width="1440" height="810">
               <img class="shot" src="../assets/shots/estilo-kde.jpg" alt="Eclipse OS with the KDE style" loading="lazy" width="1920" height="1080">
               <img class="shot" src="../assets/shots/estilo-win11.jpg" alt="Eclipse OS with the Windows 11 style" loading="lazy" width="1920" height="1080">
@@ -215,13 +215,12 @@
         <div class="step reveal">
           <h3>Download the ISO</h3>
           <p>Pick desktop or minimal, for x86_64 or arm64, in <a class="link" href="releases/">Downloads</a>.</p>
-          <pre>eclipse-desktop-x86_64.iso.gz</pre>
+          <pre>eclipse-desktop-x86_64.iso</pre>
         </div>
         <div class="step reveal">
           <h3>Boot it in QEMU</h3>
           <p>It needs UEFI firmware (OVMF) and at least 4&nbsp;GB of memory.</p>
-          <pre>gunzip eclipse-desktop-x86_64.iso.gz
-qemu-system-x86_64 -machine q35 \
+          <pre>qemu-system-x86_64 -machine q35 \
   -m 8G -smp 4 -vga virtio \
   -drive if=pflash,format=raw,readonly=on,file=OVMF.fd \
   -cdrom eclipse-desktop-x86_64.iso</pre>

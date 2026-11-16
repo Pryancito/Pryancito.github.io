@@ -48,7 +48,7 @@
     </div>
 
     <div class="wrap hero-text">
-      <span class="badge"><i></i> Versión 0.7 disponible · x86_64 y arm64</span>
+      <span class="badge"><i></i> Versión 0.7.2 disponible · x86_64 y arm64</span>
       <h1>El sistema operativo<br><span class="grad-text">que nace de un eclipse</span></h1>
       <p class="lead">
         Un núcleo propio escrito en Rust seguro que habla el idioma de Linux.
@@ -63,7 +63,7 @@
 
     <div class="wrap">
       <figure class="screen reveal">
-        <div class="screen-bar"><i></i><i></i><i></i><span>Eclipse OS 0.7.1 · escritorio labwc</span></div>
+        <div class="screen-bar"><i></i><i></i><i></i><span>Eclipse OS 0.7.2 · escritorio labwc</span></div>
         <img src="assets/shots/escritorio.jpg" alt="Escritorio de Eclipse OS con el eclipse dorado del fondo animado y los paneles superior e inferior" width="1920" height="1080">
       </figure>
       <p class="caption">Captura real de Eclipse OS funcionando en QEMU.</p>
@@ -127,7 +127,7 @@
       <div class="sec-head reveal">
         <span class="kicker">Así se ve</span>
         <h2>Eclipse OS, <span class="grad-text">en marcha</span></h2>
-        <p>Capturas reales de Eclipse OS 0.7.1, compilado desde el código actual y arrancado en QEMU. Elige una pestaña.</p>
+        <p>Capturas reales de Eclipse OS 0.7.2, compilado desde el código actual y arrancado en QEMU. Elige una pestaña.</p>
       </div>
 
       <div class="showcase reveal">
@@ -146,7 +146,7 @@
             <div class="shots">
               <img class="shot active" src="assets/shots/escritorio.jpg" alt="Escritorio de Eclipse OS" width="1920" height="1080">
               <img class="shot" src="assets/shots/lanzador.jpg" alt="Lanzador de aplicaciones de Eclipse OS" loading="lazy" width="960" height="540">
-              <img class="shot" src="assets/shots/terminal.jpg" alt="Terminal foot con uname, memoria, disco y el estado de hunter" loading="lazy" width="1040" height="585">
+              <img class="shot" src="assets/shots/terminal.jpg" alt="Terminal foot con uname, versión, memoria, disco y el estado de hunter" loading="lazy" width="1040" height="585">
               <img class="shot" src="assets/shots/monitor.jpg" alt="Monitor del sistema lunarmon con CPU por núcleo, memoria, red, disco y la lista de procesos" loading="lazy" width="1440" height="810">
               <img class="shot" src="assets/shots/estilo-kde.jpg" alt="Eclipse OS con el estilo KDE" loading="lazy" width="1920" height="1080">
               <img class="shot" src="assets/shots/estilo-win11.jpg" alt="Eclipse OS con el estilo Windows 11" loading="lazy" width="1920" height="1080">
@@ -214,13 +214,12 @@
         <div class="step reveal">
           <h3>Descarga la ISO</h3>
           <p>Elige escritorio o mínima, para x86_64 o arm64, en <a class="link" href="releases/">Descargas</a>.</p>
-          <pre>eclipse-desktop-x86_64.iso.gz</pre>
+          <pre>eclipse-desktop-x86_64.iso</pre>
         </div>
         <div class="step reveal">
           <h3>Arranca en QEMU</h3>
           <p>Necesita firmware UEFI (OVMF) y al menos 4&nbsp;GB de memoria.</p>
-          <pre>gunzip eclipse-desktop-x86_64.iso.gz
-qemu-system-x86_64 -machine q35 \
+          <pre>qemu-system-x86_64 -machine q35 \
   -m 8G -smp 4 -vga virtio \
   -drive if=pflash,format=raw,readonly=on,file=OVMF.fd \
   -cdrom eclipse-desktop-x86_64.iso</pre>
