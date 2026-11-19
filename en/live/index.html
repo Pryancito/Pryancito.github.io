@@ -4,95 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Eclipse OS in your browser</title>
-  <meta name="description" content="Boot the real Eclipse OS kernel (riscv64) in your browser, on QEMU compiled to WebAssembly. Nothing to install and no server: it all runs on your machine.">
+  <meta name="description" content="The real Eclipse OS kernel (riscv64) booting in your browser, on QEMU compiled to WebAssembly. It all runs on your machine.">
+  <meta name="theme-color" content="#000000">
   <link rel="alternate" hreflang="es" href="https://eclipse-os.dev/live/">
   <link rel="alternate" hreflang="en" href="https://eclipse-os.dev/en/live/">
   <link rel="alternate" hreflang="x-default" href="https://eclipse-os.dev/live/">
   <link rel="icon" href="../../assets/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../../css/style.css?v=6">
   <link rel="stylesheet" href="../../live/vendor/xterm.css">
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+    #term { position: fixed; inset: 0; padding: 6px 4px 6px 8px; box-sizing: border-box; }
+    #term .xterm { height: 100%; }
+    .live-plain { color: #ddd5f7; font: 14px/1.5 ui-monospace, monospace; white-space: pre-wrap; padding: 16px !important; }
+  </style>
 </head>
-<body>
-  <canvas id="stars" aria-hidden="true"></canvas>
-  <div class="glow glow-a" aria-hidden="true"></div>
-  <div class="glow glow-b" aria-hidden="true"></div>
-
-  <nav id="nav">
-    <div class="wrap">
-      <a href="../" class="brand"><img src="../../assets/logo.svg" alt="">Eclipse<span>OS</span></a>
-      <ul>
-        <li><a href="../#features">Features</a></li>
-        <li><a href="../#screenshots">Screenshots</a></li>
-        <li><a href="./" aria-current="page">Live</a></li>
-        <li><a href="../releases/">Downloads</a></li>
-        <li><a href="../../bench.html" hreflang="es" title="Report in Spanish">Benchmarks</a></li>
-      </ul>
-      <div class="nav-end">
-        <div class="lang" aria-label="Language / Idioma"><a href="../../live/" hreflang="es" lang="es">ES</a><a href="./" hreflang="en" lang="en" aria-current="true">EN</a></div>
-        <a class="btn btn-ghost btn-sm" href="https://github.com/Pryancito/eclipse">GitHub ↗</a>
-      </div>
-    </div>
-  </nav>
-
-  <main class="wrap">
-    <header class="sec-head page-head reveal">
-      <span class="kicker">Live</span>
-      <h2>Eclipse OS <span class="grad-text">in your browser</span></h2>
-      <p>The real kernel, not a video or a mock-up: Eclipse for riscv64 booting inside QEMU compiled to WebAssembly. It all runs on your machine.</p>
-    </header>
-
-    <section class="live reveal" id="live"
-      data-msg-ready="Ready to power on. About {size} is downloaded the first time."
-      data-msg-unsupported="Your browser cannot run the emulator: {why}. Try a recent Chrome, Edge or Firefox on a computer."
-      data-msg-isolation="the page is not cross-origin isolated (the server&#39;s COOP/COEP headers)"
-      data-msg-download="Downloading {file}… {pct}"
-      data-msg-booting="Booting Eclipse OS. The emulator translates every instruction, so this takes a while: please be patient."
-      data-msg-running="Eclipse OS is up. Type in the terminal."
-      data-msg-stopped="The machine has powered off. Reload the page to start it again."
-      data-msg-error="It could not boot: {why}">
-      <figure class="screen">
-        <div class="screen-bar"><i></i><i></i><i></i><span>Eclipse OS · riscv64 · serial console</span></div>
-        <div class="live-term" id="term">
-          <div class="live-cover" id="cover">
-            <button class="btn btn-primary" id="power" type="button" disabled>Power on Eclipse OS</button>
-            <p class="live-status" id="status" role="status" aria-live="polite">Checking your browser…</p>
-          </div>
-        </div>
-      </figure>
-      <p class="caption">Booting takes from half a minute to a couple of minutes, depending on your machine. Whatever you do inside is lost on reload.</p>
-    </section>
-
-    <section class="steps live-steps">
-      <div class="step reveal">
-        <h3>Try a few commands</h3>
-        <p>This is the console of the minimal variant, with busybox and Eclipse&#39;s own tools.</p>
-        <pre>uname -a
-cat /etc/os-release
-ps
-hunterctl status | head -4
-top</pre>
-      </div>
-      <div class="step reveal">
-        <h3>What is behind it</h3>
-        <p>The Eclipse kernel and its <code>eclipse-init</code>, built for riscv64 and booted with OpenSBI on QEMU&#39;s <code>virt</code> machine, which runs as WebAssembly with its JIT translator.</p>
-      </div>
-      <div class="step reveal">
-        <h3>What is missing</h3>
-        <p>No desktop, no network and no disk that is kept. For the full desktop, download the <a class="link" href="../releases/">ISO</a> and boot it in QEMU or on your PC.</p>
-      </div>
-    </section>
-
-    <p class="muted small live-credits">Emulator: <a class="link" href="https://github.com/ktock/qemu-wasm">qemu-wasm</a> (QEMU for the browser, GPL-2.0). Terminal: <a class="link" href="https://xtermjs.org/">xterm.js</a> and <a class="link" href="https://github.com/mame/xterm-pty">xterm-pty</a> (MIT). Firmware: <a class="link" href="https://github.com/riscv-software-src/opensbi">OpenSBI</a> (BSD-2). The sources and how to rebuild these files are in <a class="link" href="https://github.com/Pryancito/eclipse/tree/master/scripts/live-web">scripts/live-web</a>.</p>
-  </main>
-
-  <footer>
-    <div class="wrap">
-      <span class="brand"><img src="../../assets/logo.svg" alt="">Eclipse<span>OS</span></span>
-      <span>Free software · <a href="https://github.com/Pryancito/eclipse">github.com/Pryancito/eclipse</a></span>
-    </div>
-  </footer>
-
-  <script src="../../js/app.js?v=5"></script>
-  <script type="module" src="../../live/live.js?v=1"></script>
+<body
+  data-msg-unsupported="Your browser cannot run the emulator: {why}. Try a recent Chrome, Edge or Firefox on a computer."
+  data-msg-isolation="the page is not cross-origin isolated (the server&#39;s COOP/COEP headers)"
+  data-msg-download="Downloading {file}… {pct}"
+  data-msg-booting="Booting Eclipse OS on QEMU (riscv64). This takes from half a minute to a couple of minutes…"
+  data-msg-stopped="The machine has powered off. Reload the page to start it again."
+  data-msg-error="It could not boot: {why}">
+  <div id="term" role="application" aria-label="Eclipse OS serial console"></div>
+  <noscript><p style="color:#ddd5f7;font-family:monospace;padding:16px">This page needs JavaScript to boot Eclipse OS.</p></noscript>
+  <script type="module" src="../../live/live.js?v=2"></script>
 </body>
 </html>
