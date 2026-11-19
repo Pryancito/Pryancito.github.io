@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eclipse OS en tu navegador</title>
+  <meta name="description" content="Arranca el núcleo real de Eclipse OS (riscv64) en tu navegador, con QEMU compilado a WebAssembly. Sin instalar nada y sin servidor: todo corre en tu equipo.">
+  <link rel="alternate" hreflang="es" href="https://eclipse-os.dev/live/">
+  <link rel="alternate" hreflang="en" href="https://eclipse-os.dev/en/live/">
+  <link rel="alternate" hreflang="x-default" href="https://eclipse-os.dev/live/">
+  <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/style.css?v=6">
+  <link rel="stylesheet" href="vendor/xterm.css">
+</head>
+<body>
+  <canvas id="stars" aria-hidden="true"></canvas>
+  <div class="glow glow-a" aria-hidden="true"></div>
+  <div class="glow glow-b" aria-hidden="true"></div>
+
+  <nav id="nav">
+    <div class="wrap">
+      <a href="../" class="brand"><img src="../assets/logo.svg" alt="">Eclipse<span>OS</span></a>
+      <ul>
+        <li><a href="../#virtudes">Virtudes</a></li>
+        <li><a href="../#capturas">Capturas</a></li>
+        <li><a href="./" aria-current="page">En vivo</a></li>
+        <li><a href="../releases/">Descargas</a></li>
+        <li><a href="../bench.html">Benchmarks</a></li>
+      </ul>
+      <div class="nav-end">
+        <div class="lang" aria-label="Idioma / Language"><a href="./" hreflang="es" lang="es" aria-current="true">ES</a><a href="../en/live/" hreflang="en" lang="en">EN</a></div>
+        <a class="btn btn-ghost btn-sm" href="https://github.com/Pryancito/eclipse">GitHub ↗</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrap">
+    <header class="sec-head page-head reveal">
+      <span class="kicker">En vivo</span>
+      <h2>Eclipse OS <span class="grad-text">en tu navegador</span></h2>
+      <p>El núcleo de verdad, no un vídeo ni una imitación: Eclipse para riscv64 arrancando dentro de QEMU compilado a WebAssembly. Todo corre en tu equipo.</p>
+    </header>
+
+    <section class="live reveal" id="live"
+      data-msg-ready="Listo para encender. Se descargan unos {size} la primera vez."
+      data-msg-unsupported="Tu navegador no puede ejecutar el emulador: {why}. Prueba con Chrome, Edge o Firefox recientes en un ordenador."
+      data-msg-isolation="falta el aislamiento entre orígenes (cabeceras COOP/COEP del servidor)"
+      data-msg-download="Descargando {file}… {pct}"
+      data-msg-booting="Arrancando Eclipse OS. El emulador traduce cada instrucción, así que tarda un poco: ten paciencia."
+      data-msg-running="Eclipse OS está en marcha. Escribe en la terminal."
+      data-msg-stopped="La máquina se ha apagado. Recarga la página para volver a encenderla."
+      data-msg-error="No se ha podido arrancar: {why}">
+      <figure class="screen">
+        <div class="screen-bar"><i></i><i></i><i></i><span>Eclipse OS · riscv64 · consola serie</span></div>
+        <div class="live-term" id="term">
+          <div class="live-cover" id="cover">
+            <button class="btn btn-primary" id="power" type="button" disabled>Encender Eclipse OS</button>
+            <p class="live-status" id="status" role="status" aria-live="polite">Comprobando tu navegador…</p>
+          </div>
+        </div>
+      </figure>
+      <p class="caption">La primera vez tarda en arrancar entre medio minuto y un par de minutos, según tu equipo. Lo que hagas dentro se pierde al recargar.</p>
+    </section>
+
+    <section class="steps live-steps">
+      <div class="step reveal">
+        <h3>Prueba algunos comandos</h3>
+        <p>Es la consola de la variante mínima, con busybox y las herramientas propias de Eclipse.</p>
+        <pre>uname -a
+cat /etc/os-release
+ps
+hunterctl status | head -4
+top</pre>
+      </div>
+      <div class="step reveal">
+        <h3>Qué hay detrás</h3>
+        <p>El núcleo de Eclipse y su <code>eclipse-init</code>, compilados para riscv64 y arrancados con OpenSBI en la máquina <code>virt</code> de QEMU, que corre como WebAssembly con su traductor JIT.</p>
+      </div>
+      <div class="step reveal">
+        <h3>Qué no hay</h3>
+        <p>Ni escritorio, ni red, ni disco que se guarde. Para el escritorio completo, descarga la <a class="link" href="../releases/">ISO</a> y arráncala en QEMU o en tu PC.</p>
+      </div>
+    </section>
+
+    <p class="muted small live-credits">Emulador: <a class="link" href="https://github.com/ktock/qemu-wasm">qemu-wasm</a> (QEMU para el navegador, GPL-2.0). Terminal: <a class="link" href="https://xtermjs.org/">xterm.js</a> y <a class="link" href="https://github.com/mame/xterm-pty">xterm-pty</a> (MIT). Firmware: <a class="link" href="https://github.com/riscv-software-src/opensbi">OpenSBI</a> (BSD-2). Las fuentes y la forma de reconstruir estos ficheros están en <a class="link" href="https://github.com/Pryancito/eclipse/tree/master/scripts/live-web">scripts/live-web</a>.</p>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span class="brand"><img src="../assets/logo.svg" alt="">Eclipse<span>OS</span></span>
+      <span>Software libre · <a href="https://github.com/Pryancito/eclipse">github.com/Pryancito/eclipse</a></span>
+    </div>
+  </footer>
+
+  <script src="../js/app.js?v=5"></script>
+  <script type="module" src="live.js?v=1"></script>
+</body>
+</html>
