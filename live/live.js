@@ -1,27 +1,19 @@
 // Eclipse OS en el navegador: el núcleo riscv64 de Eclipse arrancado en
 // qemu-system-riscv64 compilado a WebAssembly (qemu-wasm), con la consola serie
-// en una terminal xterm.js. La página en inglés (/en/live/) usa este mismo
-// fichero; los textos salen de los data-msg-* de #live.
+// en una terminal xterm.js que ocupa toda la ventana. Arranca solo al abrir la
+// página; lo que pasa antes de QEMU (descargas, errores) se escribe en la misma
+// terminal. La página en inglés (/en/live/) usa este fichero; los textos salen
+// de los data-msg-* de <body>.
 //
 // Lo que se descarga está en emu/manifest.json, que escribe
 // scripts/live-web/build.sh del repositorio de Eclipse.
 
 const here = new URL('.', import.meta.url);
-const root = document.getElementById('live');
-const statusEl = document.getElementById('status');
-const power = document.getElementById('power');
-const cover = document.getElementById('cover');
 const termEl = document.getElementById('term');
 
 const msg = (key, vars = {}) =>
-  (root.dataset['msg' + key[0].toUpperCase() + key.slice(1)] || key)
+  (document.body.dataset['msg' + key[0].toUpperCase() + key.slice(1)] || key)
     .replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
-const say = (key, vars) => { statusEl.textContent = msg(key, vars); };
-
-const mib = (n) => {
-  const v = n / (1024 * 1024);
-  return (v >= 10 ? Math.round(v) : v.toFixed(1)).toString().replace('.', document.documentElement.lang === 'es' ? ',' : '.') + ' MB';
-};
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -52,80 +44,71 @@ function supportProblem() {
   return null;
 }
 
-let manifest;
-
-async function init() {
-  const why = supportProblem();
-  if (why) { say('unsupported', { why }); return; }
-  try {
-    manifest = await (await fetch(new URL('emu/manifest.json', here))).json();
-  } catch (e) {
-    say('error', { why: e.message });
-    return;
-  }
-  const total = manifest.files.reduce((n, f) => n + f.size, 0) + manifest.emulatorSize;
-  say('ready', { size: mib(total) });
-  power.disabled = false;
-  power.addEventListener('click', boot, { once: true });
+// Sin xterm.js (no ha cargado) el aviso va en texto plano a la página.
+function plainError(text) {
+  termEl.textContent = text;
+  termEl.classList.add('live-plain');
 }
 
 async function boot() {
-  power.disabled = true;
   try {
     await loadScript(new URL('vendor/xterm.js', here));
     await loadScript(new URL('vendor/xterm-addon-fit.js', here));
     await loadScript(new URL('vendor/xterm-pty.js', here));
+  } catch (e) {
+    plainError(msg('error', { why: e.message }));
+    return;
+  }
 
+  const xterm = new Terminal({
+    fontFamily: 'ui-monospace, "Cascadia Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace',
+    fontSize: window.innerWidth < 640 ? 11 : 14,
+    theme: { background: '#000000', foreground: '#ddd5f7', cursor: '#ffd36e' },
+    cursorBlink: true,
+  });
+  const fit = new FitAddon.FitAddon();
+  xterm.loadAddon(fit);
+  xterm.open(termEl);
+  fit.fit();
+  window.addEventListener('resize', () => fit.fit());
+  xterm.focus();
+
+  const dim = (s) => `\x1b[2m${s}\x1b[0m`;
+  const line = (s) => xterm.write(s + '\r\n');
+
+  const why = supportProblem();
+  if (why) { line(msg('unsupported', { why })); return; }
+
+  try {
+    const manifest = await (await fetch(new URL('emu/manifest.json', here))).json();
     const files = {};
     for (const f of manifest.files) {
-      files[f.path] = await fetchBytes(f, (got) =>
-        say('download', { file: f.label, pct: Math.min(99, Math.round(100 * got / f.size)) + ' %' }));
+      let shown = -1;
+      files[f.path] = await fetchBytes(f, (got) => {
+        const pct = Math.min(99, Math.floor(100 * got / f.size));
+        if (pct !== shown) { shown = pct; xterm.write('\r' + dim(msg('download', { file: f.label, pct: pct + ' %' })) + '\x1b[K'); }
+      });
+      xterm.write('\r' + dim(msg('download', { file: f.label, pct: '100 %' })) + '\x1b[K\r\n');
     }
-
-    say('booting');
-    const xterm = new Terminal({
-      fontFamily: '"JetBrains Mono", ui-monospace, monospace',
-      fontSize: window.innerWidth < 640 ? 11 : 14,
-      theme: { background: '#000000', foreground: '#ddd5f7', cursor: '#ffd36e' },
-      cursorBlink: true,
-      convertEol: false,
-    });
-    const fit = new FitAddon.FitAddon();
-    xterm.loadAddon(fit);
-    const term = document.createElement('div');
-    term.className = 'live-xterm';
-    termEl.appendChild(term);
-    xterm.open(term);
-    fit.fit();
-    window.addEventListener('resize', () => fit.fit());
+    line(dim(msg('booting')));
 
     // La salida llega a trozos (a veces byte a byte), así que se mira con una
-    // ventana de los últimos bytes:
-    // - /etc/profile mide la terminal con \e[999;999H\e[6n y luego vuelve a
-    //   \e[H para pintar el logo; en una pantalla llena de mensajes de arranque
-    //   el logo saldría encima de ellos, así que se borra la pantalla ahí;
-    // - el primer «/ # » es el intérprete de órdenes: la máquina ya está lista.
+    // ventana de los últimos bytes: /etc/profile mide la terminal con
+    // \e[999;999H\e[6n y luego vuelve a \e[H para pintar el logo; en una
+    // pantalla llena de mensajes de arranque el logo saldría encima de ellos,
+    // así que se borra la pantalla ahí.
     const probe = '\x1b[999;999H';
     let tail = '';
-    let running = false;
     const write = xterm.write.bind(xterm);
     xterm.write = (data, cb) => {
       const text = typeof data === 'string' ? data.slice(-32) : String.fromCharCode(...data.slice(-32));
       tail = (tail + text).slice(-32);
       write(data, cb);
       if (tail.includes(probe)) { write('\x1b[2J\x1b[3J'); tail = ''; }
-      if (!running && tail.includes('/ # ')) {
-        running = true;
-        cover.hidden = true;
-        say('running');
-        xterm.textarea?.focus({ preventScroll: true });
-      }
     };
 
     const { master, slave } = openpty();
     xterm.loadAddon(master);
-
-    cover.classList.add('live-cover-booting');
 
     const emuUrl = new URL(manifest.emulator, here).href;
     const { default: initQemu } = await import(emuUrl);
@@ -138,7 +121,7 @@ async function boot() {
         mod.FS.mkdir('/pack');
         for (const [path, bytes] of Object.entries(files)) mod.FS.writeFile(path, bytes);
       }],
-      onExit: () => { cover.hidden = false; say('stopped'); },
+      onExit: () => write('\r\n' + dim(msg('stopped')) + '\r\n'),
     };
     const instance = await initQemu(Module);
 
@@ -152,9 +135,8 @@ async function boot() {
     };
   } catch (e) {
     console.error(e);
-    cover.hidden = false;
-    say('error', { why: e.message || String(e) });
+    line('\r\n' + msg('error', { why: e.message || String(e) }));
   }
 }
 
-init();
+boot();
