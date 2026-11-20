@@ -1,0 +1,11 @@
+{
+  "name": "eclipse-wisp",
+  "private": true,
+  "description": "Servidor Wisp para la red de Eclipse OS en el navegador (eclipse-os.dev/live/)",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": { "start": "node server.mjs" },
+  "dependencies": {
+    "@mercuryworkshop/wisp-js": "0.5.3"
+  }
+}

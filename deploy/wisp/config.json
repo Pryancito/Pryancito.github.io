@@ -1,0 +1,13 @@
+{
+  "log_level": "WARN",
+  "port_whitelist": [80, 443],
+  "allow_direct_ip": true,
+  "allow_private_ips": false,
+  "allow_loopback_ips": false,
+  "allow_udp_streams": false,
+  "allow_tcp_streams": true,
+  "stream_limit_total": 32,
+  "stream_limit_per_host": 8,
+  "parse_real_ip": true,
+  "parse_real_ip_from": ["127.0.0.1"]
+}
