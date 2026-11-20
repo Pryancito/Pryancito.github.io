@@ -7,6 +7,15 @@
 //
 // Lo que se descarga está en emu/manifest.json, que escribe
 // scripts/live-web/build.sh del repositorio de Eclipse.
+//
+// La red (net.js) sale por el servidor Wisp de WISP_PATH, relativo a esta
+// carpeta: wss://live.eclipse-os.dev/wisp/ o wss://eclipse-os.dev/live/wisp/.
+// Con ?net=0 en la URL la máquina arranca sin red.
+
+import { setupNetwork, QEMU_NET_HOST, QEMU_NET_URL } from './net.js?v=1';
+
+const WISP_PATH = 'wisp/';
+const DOH_SERVER = 'cloudflare-dns.com';
 
 const here = new URL('.', import.meta.url);
 const termEl = document.getElementById('term');
@@ -110,10 +119,25 @@ async function boot() {
     const { master, slave } = openpty();
     xterm.loadAddon(master);
 
+    // build.sh pone `-nic none`; con red se cambia por una virtio-net cuyo
+    // socket es el WebSocket falso de net.js.
+    let args = manifest.arguments;
+    const nic = args.indexOf('-nic');
+    if (nic >= 0 && new URLSearchParams(location.search).get('net') !== '0') {
+      const wisp = new URL(WISP_PATH, here);
+      wisp.protocol = wisp.protocol === 'https:' ? 'wss:' : 'ws:';
+      setupNetwork({ wispUrl: wisp.href, dohServer: DOH_SERVER });
+      args = [...args.slice(0, nic),
+        '-netdev', `socket,id=net0,connect=${QEMU_NET_HOST}`,
+        '-device', 'virtio-net-device,netdev=net0',
+        ...args.slice(nic + 2)];
+    }
+
     const emuUrl = new URL(manifest.emulator, here).href;
     const { default: initQemu } = await import(emuUrl);
     const Module = {
-      arguments: manifest.arguments,
+      arguments: args,
+      websocket: { url: QEMU_NET_URL },
       pty: slave,
       mainScriptUrlOrBlob: emuUrl,
       locateFile: (p) => new URL('emu/' + p, here).href,

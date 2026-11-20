@@ -1,0 +1,35 @@
+# Servidor Wisp de la red de Eclipse OS en el navegador. Ver deploy/wisp/README.md.
+#
+#   sudo cp eclipse-wisp.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now eclipse-wisp
+
+[Unit]
+Description=Eclipse OS live: servidor Wisp (red de la demo en el navegador)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/opt/eclipse-wisp
+ExecStart=/usr/bin/node /opt/eclipse-wisp/server.mjs /opt/eclipse-wisp/config.json 5001
+Restart=on-failure
+RestartSec=2
+
+# Sin privilegios y sin poder tocar el sistema: solo abre sockets.
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryMax=512M
+TasksMax=64
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target
