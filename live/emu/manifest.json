@@ -1,6 +1,6 @@
 {
-  "version": "0.7.3-riscv64-minimal",
-  "commit": "c75c4530d761",
+  "version": "0.8.0-riscv64-minimal",
+  "commit": "b326f789856f",
   "emulator": "emu/qemu-system-riscv64.js",
   "emulatorSize": 12250858,
   "files": [
@@ -14,13 +14,13 @@
       "url": "emu/zcore.bin.gz",
       "path": "/pack/zcore.bin",
       "label": "kernel",
-      "size": 3211270
+      "size": 3192565
     },
     {
       "url": "emu/initrd.img.gz",
       "path": "/pack/initrd.img",
       "label": "rootfs",
-      "size": 8399693
+      "size": 8437906
     }
   ],
   "arguments": [
