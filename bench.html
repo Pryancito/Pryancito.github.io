@@ -122,7 +122,6 @@
   .ratio.good { color: #6bcb77; }
   .ratio.warn { color: var(--warn); }
   .flag { color: var(--warn); }
-  .prev { color: var(--muted); font-size: 0.8rem; }
 
   .intro { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
   .card {
@@ -167,16 +166,17 @@
 <header>
   <h1>eclipse-bench — Eclipse vs Linux</h1>
   <p class="meta">
-    Misma máquina, 20 CPUs, working set 32&nbsp;MiB. Run más reciente de Eclipse
-    frente al run de Linux Pop!_OS de siempre; la columna <em>antes</em> es el run anterior de
-    Eclipse, para ver qué ha cambiado. Filas <strong style="color:var(--user)">[user]</strong> miden la CPU
-    y deben salir parecidas; las <strong style="color:var(--kernel)">[kernel]</strong>
-    miden el sistema operativo — ahí está la diferencia real. Las secciones marcadas
-    <em>nuevo</em> no existían en el run anterior y solo tienen el hint orientativo de Linux.
+    El mismo binario de eclipse-bench en los dos sistemas, 20 CPUs, working set 32&nbsp;MiB.
+    <strong>Eclipse corre dentro de QEMU; Linux, sobre el hardware real.</strong> Las filas
+    <strong style="color:var(--user)">[user]</strong> miden la CPU y quedan a un 7&nbsp;% (el coste
+    de la virtualización); las <strong style="color:var(--kernel)">[kernel]</strong> miden el sistema
+    operativo. Todo lo que despierta una CPU, toca el disco o la GPU penaliza a Eclipse por estar
+    virtualizado, así que los <a href="#ratios" style="color:var(--eclipse)">ratios</a> y las filas
+    de escalado pesan más que las cifras absolutas.
   </p>
   <div class="legend">
-    <span><i class="dot eclipse"></i> Eclipse</span>
-    <span><i class="dot linux"></i> Linux Pop!_OS</span>
+    <span><i class="dot eclipse"></i> Eclipse (QEMU)</span>
+    <span><i class="dot linux"></i> Linux (hardware real)</span>
     <span><i class="dot user"></i> userspace</span>
     <span><i class="dot kernel"></i> kernel</span>
     <span><i class="sw win"></i> gana</span>
@@ -211,21 +211,25 @@
   <div class="card eclipse">
     <h3>● Eclipse</h3>
     <dl>
+      <dt>entorno</dt><dd>QEMU</dd>
       <dt>self</dt><dd>/bin/eclipse-bench</dd>
       <dt>dir / disk / mem</dt><dd>. · 32 MiB · 32 MiB</dd>
       <dt>cpus</dt><dd>20</dd>
       <dt>free en dir</dt><dd>949 380 MiB</dd>
       <dt>vDSO</dt><dd>0x7fffff7fc000</dd>
+      <dt>DRM</dt><dd>GPU emulada, 1920×1080</dd>
     </dl>
   </div>
   <div class="card linux">
-    <h3>● Linux Pop!_OS</h3>
+    <h3>● Linux</h3>
     <dl>
+      <dt>entorno</dt><dd>hardware real</dd>
       <dt>self</dt><dd>…/tools/eclipse-bench/eclipse-bench</dd>
       <dt>dir / disk / mem</dt><dd>. · 32 MiB · 32 MiB</dd>
       <dt>cpus</dt><dd>20</dd>
-      <dt>free en dir</dt><dd>466 338 MiB</dd>
-      <dt>vDSO</dt><dd>0x7b24440f8000</dd>
+      <dt>free en dir</dt><dd>124 553 MiB</dd>
+      <dt>vDSO</dt><dd>0x7fe160aa6000</dd>
+      <dt>DRM</dt><dd>GPU real, 1366×768</dd>
     </dl>
   </div>
 </div>
@@ -234,944 +238,944 @@
   <h2>Resumen <span class="tag">lo que dicen los números</span></h2>
   <div class="verdict">
     <div class="card">
-      <h3 style="color:var(--linux)">Donde Eclipse gana</h3>
+      <h3 style="color:var(--linux)">Donde Eclipse gana o empata</h3>
       <ul>
-        <li><strong>Interactividad arreglada</strong>: <code>wake late loaded/idle</code> <strong>0.39× / 1.01×</strong> (antes 22.7× / 20.3×), en rango Linux</li>
-        <li><code>sleep 1ms late</code> bajo carga: <strong>34.1 µs</strong> de media vs 52.3 µs (antes 113 751 µs)</li>
-        <li>Escalado SMP: <strong>106 %</strong> con 20 hilos vs 85 % (antes 75 %)</li>
-        <li><code>fork + exit</code>: 420 µs vs 2442 µs (5.8×); bajo carga 0.8 ms vs 1.5 ms</li>
-        <li><code>pthread_create + join</code>: 35 µs vs 1626 µs</li>
-        <li>Ancho de banda de pipe: 6356 MB/s vs 1107 MB/s (5.7×)</li>
-        <li>Red de loopback, mutex con contención y semáforos por delante del hint de Linux</li>
+        <li><strong>Interactividad</strong>: <code>wake late loaded/idle</code> 0.39× / 1.01× vs 0.96× / 0.91× — a la par</li>
+        <li><code>sleep 1ms late</code> bajo carga (media): 34.1 µs vs 52.1 µs</li>
+        <li>Escalado de trabajo en userspace: 106 % vs 94 %</li>
+        <li>TCP/UDP de loopback: round trip 7.0 vs 10.1 µs; connect+accept 10.7 vs 16.5 µs</li>
+        <li>Futex O(1) y despertar con 64 en cola: 8.7 µs vs 58.9 µs</li>
+        <li>vDSO (<code>clock_gettime</code>, <code>time</code>): ~0.6×</li>
+        <li>Ancho de banda de pipe: 6356 vs 3830 MB/s</li>
       </ul>
     </div>
     <div class="card">
       <h3 style="color:var(--kernel)">Donde Eclipse pierde</h3>
       <ul>
-        <li><strong>Resolución de rutas</strong>: 3.4 µs por componente (Linux ~60 ns); <code>open</code>/<code>stat</code> por ruta ~10–13 µs</li>
-        <li><code>pipe round trip</code> bajo carga: <strong>168.9 µs</strong> vs 47.1 µs (antes 8.51 µs) — regresión</li>
-        <li>Syscalls con trap (<code>getpid</code>, <code>pread</code>, <code>write</code>): 4–8× más lentas</li>
-        <li>Lectura de disco: 273 MB/s y 13.7 k IOPS vs 8.9 GB/s y 1.9 M (caché)</li>
-        <li><code>fork copy ratio</code> 1.22× → el <code>fork</code> sigue copiando eager, no COW</li>
-        <li><code>/proc/meminfo</code> 1.5 ms; <code>MODE_GETCONNECTOR</code> 64 ms</li>
+        <li><strong>Resolución de rutas</strong>: 3.4 µs por componente vs 27 ns (128×)</li>
+        <li><strong>fork sin copy-on-write</strong>: 16 MiB residentes, 3956 µs vs 92 µs (43×)</li>
+        <li><code>pipe round trip</code> bajo carga: 168.9 µs vs 3.49 µs (48×)</li>
+        <li>Suelo de syscall: 400 vs 96 ops de CPU (4.2×); señales 6–8×</li>
+        <li>Escalado de syscalls, faults y forks: 25 / 6 / 26 % vs 65 / 12 / 63 %</li>
+        <li><code>epoll_wait</code> 64 fds: 33×; <code>/proc/meminfo</code>: 350×</li>
       </ul>
     </div>
   </div>
   <div class="callout">
-    <strong>Lectura corta:</strong> el problema dominante del run anterior —la
-    <strong>latencia de despertar por temporizador</strong>, que empeoraba ~23× bajo carga— está
-    resuelto: el scheduler ahora preempta al despertar y la latencia bajo carga es del orden de
-    Linux. Lo que queda por delante es el coste base de entrar al kernel, la resolución de rutas
-    en el VFS, el <code>fork</code> sin copy-on-write y la regresión del pipe bajo carga.
+    <strong>Lectura corta:</strong> en lo que más se nota al usar un sistema —que una tarea
+    despertada consiga CPU aunque la máquina esté ocupada— Eclipse ya está a la par con Linux en
+    hardware real, aun corriendo virtualizado. Lo que le separa son rutas concretas del kernel
+    que no dependen de QEMU: la resolución de rutas en el VFS, el <code>fork</code> sin COW, el
+    coste base de cada syscall y cómo escalan con 20 CPUs, y el pipe cuando todas las CPUs están
+    ocupadas.
   </div>
 </section>
 
-<!-- CPU -->
+<!-- cpu -->
 <section id="cpu">
   <h2>CPU <span class="tag">user · más alto mejor</span></h2>
-  <p class="section-note">Propiedad de la CPU, no del OS. Si difieren: gobernador P-state o hypervisor. Siguen a un 7–9 % de Linux, igual que en el run anterior. La columna <em>antes</em> es el run anterior de Eclipse.</p>
+  <p class="section-note">Propiedad de la CPU, no del OS. Eclipse queda a un 7–8 % de Linux: es el coste de correr dentro de QEMU, no del kernel.</p>
   <table>
-    <thead><tr><th>Métrica</th><th>Eclipse</th><th class="hide-sm">antes</th><th>Linux</th><th class="hide-sm">E/L</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th class="hide-sm">E/L</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="kind user">user</span><span class="metric">int latency (dependent)</span></td><td class="val worse">1011 Mops/s</td><td class="val prev hide-sm">1034 Mops/s</td><td class="val better">1102 Mops/s</td><td class="ratio  hide-sm">0.92×</td>
+        <td><span class="kind user">user</span><span class="metric">int latency (dependent)</span></td><td class="val worse">1011 Mops/s</td><td class="val better">1083 Mops/s</td><td class="ratio  hide-sm">0.93×</td>
       </tr>
       <tr>
-        <td><span class="kind user">user</span><span class="metric">int throughput (4-wide)</span></td><td class="val worse">4018 Mops/s</td><td class="val prev hide-sm">4228 Mops/s</td><td class="val better">4427 Mops/s</td><td class="ratio  hide-sm">0.91×</td>
+        <td><span class="kind user">user</span><span class="metric">int throughput (4-wide)</span></td><td class="val worse">4018 Mops/s</td><td class="val better">4335 Mops/s</td><td class="ratio  hide-sm">0.93×</td>
       </tr>
       <tr>
-        <td><span class="kind user">user</span><span class="metric">float latency (dependent)</span></td><td class="val worse">501.4 Mops/s</td><td class="val prev hide-sm">515.3 Mops/s</td><td class="val better">553.0 Mops/s</td><td class="ratio  hide-sm">0.91×</td>
+        <td><span class="kind user">user</span><span class="metric">float latency (dependent)</span></td><td class="val worse">501.4 Mops/s</td><td class="val better">542.5 Mops/s</td><td class="ratio  hide-sm">0.92×</td>
       </tr>
     </tbody>
   </table>
 </section>
 
-<!-- MEMORY -->
+<!-- memory -->
 <section id="memory">
   <h2>Memory <span class="tag">user · working set 32 MiB</span></h2>
   <table>
-    <thead><tr><th>Métrica</th><th>Eclipse</th><th class="hide-sm">antes</th><th>Linux</th><th class="hide-sm">E/L</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th class="hide-sm">E/L</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="kind user">user</span><span class="metric">memcpy bandwidth</span></td><td class="val worse">6.7 GB/s</td><td class="val prev hide-sm">6.5 GB/s</td><td class="val better">8.3 GB/s</td><td class="ratio  hide-sm">0.81×</td>
+        <td><span class="kind user">user</span><span class="metric">memcpy bandwidth</span></td><td class="val worse">6.7 GB/s</td><td class="val better">8.6 GB/s</td><td class="ratio bad hide-sm">0.78×</td>
       </tr>
       <tr>
-        <td><span class="kind user">user</span><span class="metric">memset bandwidth</span></td><td class="val worse">22.3 GB/s</td><td class="val prev hide-sm">24.0 GB/s</td><td class="val better">24.1 GB/s</td><td class="ratio  hide-sm">0.93×</td>
+        <td><span class="kind user">user</span><span class="metric">memset bandwidth</span></td><td class="val worse">22.3 GB/s</td><td class="val better">24.4 GB/s</td><td class="ratio  hide-sm">0.91×</td>
       </tr>
       <tr>
-        <td><span class="kind user">user</span><span class="metric">random access latency</span> <span class="hint">(pre-faulted)</span></td><td class="val worse">63.0 ns</td><td class="val prev hide-sm">55.4 ns</td><td class="val better">58.8 ns</td><td class="ratio  hide-sm">1.1×</td>
+        <td><span class="kind user">user</span><span class="metric">random access latency</span> <span class="hint">(pre-faulted)</span></td><td class="val worse">63.0 ns</td><td class="val better">58.8 ns</td><td class="ratio  hide-sm">1.1×</td>
       </tr>
     </tbody>
   </table>
 </section>
 
-<!-- SYSCALL -->
+<!-- syscall -->
 <section id="syscall">
   <h2>Syscall <span class="tag">kernel · más bajo mejor</span></h2>
-  <p class="section-note">Round-trip al kernel. Resta la fila <code>getpid</code> de cualquier otra para aislar el coste del subsistema del coste del trap.</p>
+  <p class="section-note">Round-trip al kernel. Resta la fila <code>getpid</code> de cualquier otra para aislar el coste del subsistema del coste del trap. Una syscall no sale de la VM con KVM, así que esta sección compara bastante bien a pesar de QEMU.</p>
   <table>
-    <thead><tr><th>Métrica</th><th>Eclipse</th><th class="hide-sm">antes</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">getpid()</span></td><td class="val worse">396.0 ns</td><td class="val prev hide-sm">506.6 ns</td><td class="val better">89.7 ns</td><td class="hint">~55</td><td class="ratio bad hide-sm">4.4×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">getpid()</span></td><td class="val worse">396.0 ns</td><td class="val better">89.0 ns</td><td class="hint">~55</td><td class="ratio bad hide-sm">4.4×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">clock_gettime(MONOTONIC)</span></td><td class="val better">8.81 ns</td><td class="val prev hide-sm">7.79 ns</td><td class="val worse">14.4 ns</td><td class="hint">~25 (vDSO)</td><td class="ratio good hide-sm">0.61×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">clock_gettime(MONOTONIC)</span></td><td class="val better">8.81 ns</td><td class="val worse">14.2 ns</td><td class="hint">~25 (vDSO)</td><td class="ratio good hide-sm">0.62×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">clock_gettime(REALTIME)</span></td><td class="val better">8.56 ns</td><td class="val prev hide-sm">8.02 ns</td><td class="val worse">14.6 ns</td><td class="hint">~25 (vDSO)</td><td class="ratio good hide-sm">0.59×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">clock_gettime(REALTIME)</span></td><td class="val better">8.56 ns</td><td class="val worse">14.2 ns</td><td class="hint">~25 (vDSO)</td><td class="ratio good hide-sm">0.60×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">gettimeofday()</span></td><td class="val better">12.7 ns</td><td class="val prev hide-sm">11.9 ns</td><td class="val worse">20.9 ns</td><td class="hint">~25 (vDSO)</td><td class="ratio good hide-sm">0.61×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">gettimeofday()</span></td><td class="val better">12.7 ns</td><td class="val worse">20.8 ns</td><td class="hint">~25 (vDSO)</td><td class="ratio good hide-sm">0.61×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">time()</span></td><td class="val better">9.53 ns</td><td class="val prev hide-sm">9.27 ns</td><td class="val worse">15.2 ns</td><td class="hint">~25 (vDSO)</td><td class="ratio good hide-sm">0.63×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">time()</span></td><td class="val better">9.53 ns</td><td class="val worse">14.9 ns</td><td class="hint">~25 (vDSO)</td><td class="ratio good hide-sm">0.64×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">raise(SIGUSR1)+handler</span></td><td class="val worse">7927 ns</td><td class="val prev hide-sm">2908 ns</td><td class="val better">1217 ns</td><td class="hint">~1500</td><td class="ratio bad hide-sm">6.5×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">raise(SIGUSR1)+handler</span></td><td class="val worse">7927 ns</td><td class="val better">1150 ns</td><td class="hint">~1500</td><td class="ratio bad hide-sm">6.9×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">sigprocmask()</span></td><td class="val worse">505.8 ns</td><td class="val prev hide-sm">553.2 ns</td><td class="val better">99.8 ns</td><td class="hint">~90</td><td class="ratio bad hide-sm">5.1×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">sigprocmask()</span></td><td class="val worse">505.8 ns</td><td class="val better">98.0 ns</td><td class="hint">~90</td><td class="ratio bad hide-sm">5.2×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">sched_yield()</span></td><td class="val worse">769.1 ns</td><td class="val prev hide-sm">717.3 ns</td><td class="val better">229.2 ns</td><td class="hint">~300</td><td class="ratio bad hide-sm">3.4×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">sched_yield()</span></td><td class="val worse">769.1 ns</td><td class="val better">202.8 ns</td><td class="hint">~300</td><td class="ratio bad hide-sm">3.8×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">pread(/dev/zero, 1B)</span></td><td class="val worse">1041 ns</td><td class="val prev hide-sm">947.8 ns</td><td class="val better">138.5 ns</td><td class="hint">~250</td><td class="ratio bad hide-sm">7.5×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">pread(/dev/zero, 1B)</span></td><td class="val worse">1041 ns</td><td class="val better">138.8 ns</td><td class="hint">~250</td><td class="ratio bad hide-sm">7.5×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">write(/dev/null, 1B)</span></td><td class="val worse">1056 ns</td><td class="val prev hide-sm">577.9 ns</td><td class="val better">134.0 ns</td><td class="hint">~250</td><td class="ratio bad hide-sm">7.9×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">write(/dev/null, 1B)</span></td><td class="val worse">1056 ns</td><td class="val better">132.5 ns</td><td class="hint">~250</td><td class="ratio bad hide-sm">8.0×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fstat()</span></td><td class="val worse">585.2 ns</td><td class="val prev hide-sm">796.0 ns</td><td class="val better">192.5 ns</td><td class="hint">~300</td><td class="ratio bad hide-sm">3.0×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fstat()</span></td><td class="val worse">585.2 ns</td><td class="val better">202.3 ns</td><td class="hint">~300</td><td class="ratio bad hide-sm">2.9×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">stat("/dev/null")</span></td><td class="val worse">1584 ns</td><td class="val prev hide-sm">952.3 ns</td><td class="val better">407.8 ns</td><td class="hint">~900 (path walk)</td><td class="ratio bad hide-sm">3.9×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">stat("/dev/null")</span></td><td class="val worse">1584 ns</td><td class="val better">545.9 ns</td><td class="hint">~900 (path walk)</td><td class="ratio bad hide-sm">2.9×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">open+close(/dev/null)</span></td><td class="val worse">4550 ns</td><td class="val prev hide-sm">3624 ns</td><td class="val better">1841 ns</td><td class="hint">~1200</td><td class="ratio bad hide-sm">2.5×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">open+close(/dev/null)</span></td><td class="val worse">4550 ns</td><td class="val better">1156 ns</td><td class="hint">~1200</td><td class="ratio bad hide-sm">3.9×</td>
       </tr>
     </tbody>
   </table>
   <div class="callout">
-    El patrón no cambia: todo lo que pasa por <strong>vDSO</strong> (sin trap) lo gana Eclipse;
-    todo lo que <strong>entra al kernel</strong> paga un suelo de ~400 ns (antes ~500) frente a los
-    ~90 ns de Linux. <code>raise(SIGUSR1)</code> empeora casi 3× respecto al run anterior
-    (7.9 µs) — coincide con la sección Signals más abajo, donde <code>kill(self)</code> también
-    ronda los 8 µs.
+    Patrón claro: todo lo que pasa por <strong>vDSO</strong> (sin trap) lo gana Eclipse
+    (~0.6×); todo lo que <strong>entra al kernel</strong> paga un suelo de ~400 ns frente a los
+    ~89 ns de Linux, 4.4×. El ratio <code>syscall cost in CPU ops</code> (sección Ratios), que no
+    depende de la máquina, dice lo mismo: 401 frente a 96. <code>raise(SIGUSR1)</code> es el peor
+    caso, 6.9×.
   </div>
 </section>
 
-<!-- VM -->
+<!-- vm -->
 <section id="vm">
   <h2>VM / page faults <span class="tag">kernel · más bajo mejor</span></h2>
   <p class="section-note">Se pagan en el arranque de cada programa y en cada allocation que se toca; no aparecen en un benchmark de memcpy.</p>
   <table>
-    <thead><tr><th>Métrica</th><th>Eclipse</th><th class="hide-sm">antes</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">mmap+munmap (4 KiB)</span></td><td class="val worse">3628 ns</td><td class="val prev hide-sm">4274 ns</td><td class="val better">1269 ns</td><td class="hint">~2500</td><td class="ratio bad hide-sm">2.9×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">mmap+munmap (4 KiB)</span></td><td class="val worse">3628 ns</td><td class="val better">1490 ns</td><td class="hint">~2500</td><td class="ratio bad hide-sm">2.4×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">mprotect (4 KiB, ×2)</span></td><td class="val worse">2849 ns</td><td class="val prev hide-sm">2440 ns</td><td class="val better">741.0 ns</td><td class="hint">~1800</td><td class="ratio bad hide-sm">3.8×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">mprotect (4 KiB, ×2)</span></td><td class="val worse">2849 ns</td><td class="val better">678.9 ns</td><td class="hint">~1800</td><td class="ratio bad hide-sm">4.2×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">minor fault (anon touch)</span></td><td class="val worse">1377 ns</td><td class="val prev hide-sm">1366 ns</td><td class="val better">803.7 ns</td><td class="hint">~500</td><td class="ratio bad hide-sm">1.7×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">minor fault (anon touch)</span></td><td class="val worse">1377 ns</td><td class="val better">815.3 ns</td><td class="hint">~500</td><td class="ratio bad hide-sm">1.7×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric flag">COW fault (after fork) ⚠</span></td><td class="val odd">217.3 ns</td><td class="val prev hide-sm">566.9 ns</td><td class="val ">3757 ns</td><td class="hint">~1500</td><td class="ratio warn hide-sm">no comparable</td>
+        <td><span class="kind kernel">kernel</span><span class="metric flag">COW fault (after fork) ⚠</span></td><td class="val odd">217.3 ns</td><td class="val ">3610 ns</td><td class="hint">~1500</td><td class="ratio warn hide-sm">no comparable</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fork memory isolation</span></td><td class="val pass">PASS</td><td class="val prev hide-sm">PASS</td><td class="val pass">PASS</td><td class="hint"></td><td class="ratio hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork memory isolation</span></td><td class="val pass">PASS</td><td class="val pass">PASS</td><td class="hint"></td><td class="ratio hide-sm">—</td>
       </tr>
     </tbody>
   </table>
   <div class="callout warn">
-    ⚠ <strong>La fila COW fault de Eclipse sigue sin significar nada.</strong> El propio run lo
-    dice en su línea de modo del scheduler (<code>cow-fork=OFF</code>) y el
-    <code>fork copy ratio</code> es 1.22× (sección Process): el <code>fork</code> copia de forma
-    <em>eager</em>, las páginas del hijo ya son privadas y esos 217 ns cronometran escrituras
-    normales, no fallos copy-on-write.
+    ⚠ <strong>La fila COW fault de Eclipse no significa nada.</strong> El propio run lo dice en
+    su línea de modo del scheduler (<code>cow-fork=OFF</code>) y el <code>fork copy ratio</code>
+    es 1.22× (sección Process): el <code>fork</code> copia de forma <em>eager</em>, las páginas del
+    hijo ya son privadas y esos 217 ns cronometran escrituras normales, no fallos copy-on-write.
+    Linux paga 3.6 µs aquí porque sí copia la página en el momento del fallo.
   </div>
 </section>
 
-<!-- SCHEDULER -->
+<!-- sched -->
 <section id="sched">
   <h2>Scheduler / IPC <span class="tag">kernel · interactividad</span></h2>
-  <p class="section-note">Lo que hace que un sistema se sienta rápido o lento. La latencia de despertar bajo carga es LA métrica de interactividad.</p>
+  <p class="section-note">Lo que hace que un sistema se sienta rápido o lento. Ojo: bajo un hypervisor, despertar una vCPU dormida cuesta una salida de la VM y un IPI, así que las latencias absolutas penalizan a Eclipse; los ratios carga/reposo no.</p>
   <table>
-    <thead><tr><th>Métrica</th><th>Eclipse</th><th class="hide-sm">antes</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">pipe round trip (2 procs)</span></td><td class="val worse">6.38 µs</td><td class="val prev hide-sm">8.13 µs</td><td class="val better">5.94 µs</td><td class="hint">~6</td><td class="ratio  hide-sm">1.1×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">pipe round trip (2 procs)</span></td><td class="val worse">6.38 µs</td><td class="val better">5.08 µs</td><td class="hint">~6</td><td class="ratio bad hide-sm">1.3×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">pipe round trip (2 thrds)</span></td><td class="val worse">7.02 µs</td><td class="val prev hide-sm">8.45 µs</td><td class="val better">5.53 µs</td><td class="hint">~4</td><td class="ratio bad hide-sm">1.3×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">pipe round trip (2 thrds)</span></td><td class="val worse">7.02 µs</td><td class="val better">5.21 µs</td><td class="hint">~4</td><td class="ratio bad hide-sm">1.3×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">socketpair round trip</span></td><td class="val worse">6.83 µs</td><td class="val prev hide-sm">8.92 µs</td><td class="val better">5.52 µs</td><td class="hint">~8</td><td class="ratio  hide-sm">1.2×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">socketpair round trip</span></td><td class="val worse">6.83 µs</td><td class="val better">5.62 µs</td><td class="hint">~8</td><td class="ratio  hide-sm">1.2×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">futex wake round trip</span></td><td class="val better">2.02 µs</td><td class="val prev hide-sm">7.95 µs</td><td class="val worse">3.91 µs</td><td class="hint">~3</td><td class="ratio good hide-sm">0.52×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">futex wake round trip</span></td><td class="val better">2.02 µs</td><td class="val worse">4.26 µs</td><td class="hint">~3</td><td class="ratio good hide-sm">0.47×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">pthread_create + join</span></td><td class="val better">35.0 µs</td><td class="val prev hide-sm">24.4 µs</td><td class="val worse">1626 µs</td><td class="hint">~15</td><td class="ratio good hide-sm">0.022×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">pthread_create + join</span></td><td class="val worse">35.0 µs</td><td class="val better">23.8 µs</td><td class="hint">~15</td><td class="ratio bad hide-sm">1.5×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">pipe bandwidth (64K writes)</span></td><td class="val better">6356 MB/s</td><td class="val prev hide-sm">7406 MB/s</td><td class="val worse">1107 MB/s</td><td class="hint">&gt;1000</td><td class="ratio good hide-sm">5.7×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">pipe bandwidth (64K writes)</span></td><td class="val better">6356 MB/s</td><td class="val worse">3830 MB/s</td><td class="hint">&gt;1000</td><td class="ratio good hide-sm">1.7×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">sleep 1ms late, idle (mean)</span></td><td class="val worse">86.6 µs</td><td class="val prev hide-sm">5001 µs</td><td class="val better">81.2 µs</td><td class="hint">~60</td><td class="ratio  hide-sm">1.1×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">sleep 1ms late, idle (mean)</span></td><td class="val worse">86.6 µs</td><td class="val better">54.4 µs</td><td class="hint">~60</td><td class="ratio bad hide-sm">1.6×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">sleep 1ms late, idle (worst)</span></td><td class="val worse">453.0 µs</td><td class="val prev hide-sm">25 412 µs</td><td class="val better">132.2 µs</td><td class="hint">~200</td><td class="ratio bad hide-sm">3.4×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">sleep 1ms late, idle (worst)</span></td><td class="val worse">453.0 µs</td><td class="val better">58.8 µs</td><td class="hint">~200</td><td class="ratio bad hide-sm">7.7×</td>
       </tr>
-      <tr class="subgroup"><td colspan="6">con 20 procesos CPU-bound compitiendo por las CPUs</td></tr>
+      <tr class="subgroup"><td colspan="5">con 20 procesos CPU-bound compitiendo por las CPUs</td></tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">sleep 1ms late, load (mean)</span></td><td class="val better">34.1 µs</td><td class="val prev hide-sm">113 751 µs</td><td class="val worse">52.3 µs</td><td class="hint">~100</td><td class="ratio good hide-sm">0.65×</td>
-      </tr>
-      <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric flag">sleep 1ms late, load (worst) ← stutter</span></td><td class="val worse">456.6 µs</td><td class="val prev hide-sm">514 715 µs</td><td class="val better">62.5 µs</td><td class="hint">~500</td><td class="ratio bad hide-sm">7.3×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">sleep 1ms late, load (mean)</span></td><td class="val better">34.1 µs</td><td class="val worse">52.1 µs</td><td class="hint">~100</td><td class="ratio good hide-sm">0.65×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">pipe round trip, load</span></td><td class="val worse">168.9 µs</td><td class="val prev hide-sm">8.51 µs</td><td class="val better">47.1 µs</td><td class="hint">~20</td><td class="ratio bad hide-sm">3.6×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric flag">sleep 1ms late, load (worst) ← stutter</span></td><td class="val worse">456.6 µs</td><td class="val better">53.6 µs</td><td class="hint">~500</td><td class="ratio bad hide-sm">8.5×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">pipe round trip, load</span></td><td class="val worse">168.9 µs</td><td class="val better">3.49 µs</td><td class="hint">~20</td><td class="ratio bad hide-sm">48×</td>
       </tr>
     </tbody>
   </table>
   <div class="callout">
-    <strong>El gran cambio de este run.</strong> El sleep por temporizador ya no se desploma:
-    en reposo pasa de 5 ms a <strong>86.6 µs</strong> (prácticamente Linux) y bajo carga de
-    114 ms a <strong>34.1 µs</strong> de media — mejor que Linux. El peor caso bajo carga baja de
-    515 ms a <strong>457 µs</strong>, dentro del hint (~500) aunque aún 7× por encima de lo que
-    midió Linux en esta máquina. El scheduler declara ahora <code>deadline-timer=on
-    wakeup-preempt=on</code>.
+    <strong>El timer ya no se desploma:</strong> la media bajo carga (34 µs) es incluso mejor que
+    la de Linux (52 µs), y el ratio carga/reposo queda en rango (sección Ratios). Lo que falta es
+    el <strong>peor caso</strong>: Linux en hardware real nunca pasa de 59 µs, ni en reposo ni con
+    carga; Eclipse llega a ~455 µs en los dos, 8×. Parte puede ser la vCPU de QEMU, pero un peor
+    caso igual de malo en reposo apunta a la ruta del timer.
     <br><br>
-    La otra cara: el <strong>pipe bajo carga</strong>, que antes aguantaba (8.51 µs), ahora sube
-    a <strong>168.9 µs</strong>, 3.6× peor que Linux. Es la regresión a vigilar en el siguiente run.
+    <strong>Lo grave es el pipe bajo carga:</strong> 168.9 µs frente a 3.49 µs de
+    Linux, <strong>48×</strong>. En reposo el mismo pipe
+    está a 1.3× de Linux, así que lo que falla es dar CPU al lector cuando todas están ocupadas.
   </div>
 </section>
 
-<!-- PREEMPT -->
+<!-- preempt -->
 <section id="preempt">
-  <h2>Scheduler preemptivo, por dentro <span class="tag">kernel · nuevo · solo Eclipse</span></h2>
-  <p class="section-note">Un mecanismo por fila. Esta sección y las siguientes no existían en el run anterior, así que no hay columna de Linux: la referencia es el hint <code>linux:</code> del benchmark, que es orientación de orden de magnitud, no un objetivo.
-  Modo: <code>deadline-timer=on wakeup-preempt=on preempt-behind=OFF cow-fork=OFF fork-gather=on</code>.</p>
+  <h2>Scheduler preemptivo, por dentro <span class="tag">kernel · un mecanismo por fila</span></h2>
+  <p class="section-note">Modo de Eclipse: <code>deadline-timer=on wakeup-preempt=on preempt-behind=OFF cow-fork=OFF fork-gather=on</code>. Los contadores internos del kernel (rescates, rearmes del timer…) solo existen en Eclipse y no se muestran aquí.</p>
   <table>
-    <thead><tr><th>Métrica</th><th>Eclipse</th><th>hint Linux</th><th class="hide-sm">vs hint</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">yield hand-off (1 CPU)</span></td><td class="val ">796.9 ns</td><td class="hint">~600</td><td class="ratio  hide-sm">≈1.3×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">yield hand-off (1 CPU)</span></td><td class="val worse">796.9 ns</td><td class="val better">453.4 ns</td><td class="hint">~600</td><td class="ratio bad hide-sm">1.8×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">pipe RT / yield hand-off</span> <span class="hint">cuánto del round trip no es dispatch</span></td><td class="val ">8.00 ×</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">pipe RT / yield hand-off</span> <span class="hint">cuánto del round trip no es dispatch</span></td><td class="val ">8.00 ×</td><td class="val ">11.2 ×</td><td class="hint"></td><td class="ratio  hide-sm">0.71×</td>
       </tr>
-      <tr class="subgroup"><td colspan="4">suelo de rodaja: un spinner y un waker a kHz en UNA CPU</td></tr>
+      <tr class="subgroup"><td colspan="5">suelo de rodaja: un spinner y un waker a kHz en UNA CPU</td></tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">spinner alone, 1 CPU</span></td><td class="val ">935.9 kunit/s</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
-      </tr>
-      <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">spinner + 200us waker</span></td><td class="val ">624.2 kunit/s</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">spinner alone, 1 CPU</span></td><td class="val worse">935.9 kunit/s</td><td class="val better">1007 kunit/s</td><td class="hint"></td><td class="ratio  hide-sm">0.93×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">throughput retained</span> <span class="hint">bajo = preemptado en cada wake</span></td><td class="val ">66.7 %</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">spinner + 200us waker</span></td><td class="val worse">624.2 kunit/s</td><td class="val better">991.6 kunit/s</td><td class="hint"></td><td class="ratio bad hide-sm">0.63×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">waker rate achieved</span></td><td class="val ">2118 wake/s</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">throughput retained</span> <span class="hint">bajo = preemptado en cada wake</span></td><td class="val worse">66.7 %</td><td class="val better">98.4 %</td><td class="hint"></td><td class="ratio bad hide-sm">0.68×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">waker late (mean)</span></td><td class="val ">249.7 µs</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">waker rate achieved</span></td><td class="val worse">2118 wake/s</td><td class="val better">3807 wake/s</td><td class="hint"></td><td class="ratio bad hide-sm">0.56×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">waker late (worst)</span></td><td class="val ">3276 µs</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
-      </tr>
-      <tr class="subgroup"><td colspan="4">el mismo par, nacido en la CPU 0 en vez de fijado a ella</td></tr>
-      <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">spinner + waker, born on CPU 0</span></td><td class="val ">935.1 kunit/s</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">waker late (mean)</span></td><td class="val worse">249.7 µs</td><td class="val better">50.2 µs</td><td class="hint"></td><td class="ratio bad hide-sm">5.0×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">waker rate achieved</span></td><td class="val ">3928 wake/s</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric flag">waker late (worst)</span></td><td class="val worse">3276 µs</td><td class="val better">64.8 µs</td><td class="hint"></td><td class="ratio bad hide-sm">51×</td>
+      </tr>
+      <tr class="subgroup"><td colspan="5">el mismo par, nacido en la CPU 0 en vez de fijado a ella</td></tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">spinner + waker, born on CPU 0</span></td><td class="val worse">935.1 kunit/s</td><td class="val better">996.1 kunit/s</td><td class="hint"></td><td class="ratio  hide-sm">0.94×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">waker late (mean)</span></td><td class="val ">42.4 µs</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">waker rate achieved</span></td><td class="val better">3928 wake/s</td><td class="val worse">3691 wake/s</td><td class="hint"></td><td class="ratio  hide-sm">1.1×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">waker late (worst)</span></td><td class="val ">3203 µs</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
-      </tr>
-      <tr class="subgroup"><td colspan="4">resto de rodaja y work stealing</td></tr>
-      <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">plain spinner fair share</span> <span class="hint">1.00 = reparto parejo</span></td><td class="val ">1.51 ×</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">waker late (mean)</span></td><td class="val better">42.4 µs</td><td class="val worse">58.0 µs</td><td class="hint"></td><td class="ratio good hide-sm">0.73×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">parking thread fair share</span></td><td class="val ">0.49 ×</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">waker late (worst)</span></td><td class="val better">3203 µs</td><td class="val worse">6249 µs</td><td class="hint"></td><td class="ratio good hide-sm">0.51×</td>
+      </tr>
+      <tr class="subgroup"><td colspan="5">resto de rodaja y work stealing</td></tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">plain spinner fair share</span> <span class="hint">1.00 = reparto parejo</span></td><td class="val ">1.51 ×</td><td class="val ">1.08 ×</td><td class="hint"></td><td class="ratio  hide-sm">1.4×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">time to occupy all CPUs</span> <span class="hint">(20 workers creados en la CPU 0)</span></td><td class="val ">5834 µs</td><td class="hint">~0–200</td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">parking thread fair share</span></td><td class="val ">0.49 ×</td><td class="val ">0.92 ×</td><td class="hint"></td><td class="ratio  hide-sm">0.53×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">CPUs occupied of 20</span></td><td class="val ">20.0</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">time to occupy all CPUs</span> <span class="hint">(20 workers creados en la CPU 0)</span></td><td class="val ">5834 µs</td><td class="val ">n/a</td><td class="hint">~0–200</td><td class="ratio  hide-sm">—</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">steal attempts, idle</span></td><td class="val ">7011 /s</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">CPUs occupied of 20</span></td><td class="val better">20.0</td><td class="val worse">16.0</td><td class="hint"></td><td class="ratio  hide-sm">1.2×</td>
+      </tr>
+      <tr class="subgroup"><td colspan="5">afinidad y wakes cross-CPU</td></tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">sched_getcpu()</span></td><td class="val worse">11.6 ns</td><td class="val better">9.82 ns</td><td class="hint">~25 (vDSO)</td><td class="ratio  hide-sm">1.2×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">avoided by the hint</span> <span class="hint">sin coger lock</span></td><td class="val ">48.9 %</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
-      </tr>
-      <tr class="subgroup"><td colspan="4">afinidad y wakes cross-CPU</td></tr>
-      <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">sched_getcpu()</span></td><td class="val ">11.6 ns</td><td class="hint">~25 (vDSO)</td><td class="ratio  hide-sm">≈0.46×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">sched_getaffinity()</span></td><td class="val worse">540.8 ns</td><td class="val better">171.4 ns</td><td class="hint">~250</td><td class="ratio bad hide-sm">3.2×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">sched_getaffinity()</span></td><td class="val ">540.8 ns</td><td class="hint">~250</td><td class="ratio  hide-sm">≈2.2×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">sched_setaffinity() flip</span></td><td class="val worse">1095 ns</td><td class="val better">1030 ns</td><td class="hint">~700</td><td class="ratio  hide-sm">1.1×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">sched_setaffinity() flip</span></td><td class="val ">1095 ns</td><td class="hint">~700</td><td class="ratio  hide-sm">≈1.6×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">wake issue, 1 target</span></td><td class="val worse">2.57 µs</td><td class="val better">1.50 µs</td><td class="hint"></td><td class="ratio bad hide-sm">1.7×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">wake issue, 1 target</span></td><td class="val ">2.57 µs</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">wake issue, 1 target, shared word</span></td><td class="val worse">2.72 µs</td><td class="val better">1.78 µs</td><td class="hint"></td><td class="ratio bad hide-sm">1.5×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">wake issue, 1 target, shared word</span></td><td class="val ">2.72 µs</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">wake issue, 32 in a burst</span> <span class="hint">por destino</span></td><td class="val better">1.40 µs</td><td class="val worse">5.37 µs</td><td class="hint"></td><td class="ratio good hide-sm">0.26×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">wake issue, 32 in a burst</span> <span class="hint">por destino</span></td><td class="val ">1.40 µs</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">burst / single, per wake</span> <span class="hint">&lt;1 = Eclipse pliega los resched por CPU</span></td><td class="val better">0.54 ×</td><td class="val worse">3.58 ×</td><td class="hint"></td><td class="ratio good hide-sm">0.15×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">burst / single, per wake</span> <span class="hint">&lt;1 = Eclipse pliega los resched por CPU</span></td><td class="val ">0.54 ×</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
-      </tr>
-      <tr class="subgroup"><td colspan="4">trabajo del kernel por operación</td></tr>
-      <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">nanosleep(200us) cost</span></td><td class="val ">239.2 µs</td><td class="hint">~260</td><td class="ratio  hide-sm">≈0.92×</td>
-      </tr>
-      <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">timer rearms per sleep</span> <span class="hint">~1 es lo correcto</span></td><td class="val ">2.82 /sleep</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
-      </tr>
-      <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">wakeup preempt honoured</span></td><td class="val ">10.5 %</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
-      </tr>
-      <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">wake-to-run, this window</span></td><td class="val ">632.0 ns</td><td class="hint">~1000–3000</td><td class="ratio  hide-sm">≈0.63×</td>
-      </tr>
-      <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">wakes on the waker's CPU</span></td><td class="val ">3.27 %</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
-      </tr>
-      <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric flag">wake-to-run worst, boot</span> <span class="hint">desde el arranque</span></td><td class="val ">100 005 µs</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">nanosleep(200us) cost</span></td><td class="val better">239.2 µs</td><td class="val worse">256.5 µs</td><td class="hint">~260</td><td class="ratio  hide-sm">0.93×</td>
       </tr>
     </tbody>
   </table>
   <div class="callout warn">
-    ⚠ El suelo de rodaja sigue cobrándose en latencia: con spinner y waker <em>fijados</em> a la
-    misma CPU, el waker llega 250 µs tarde de media y 3.3 ms en el peor caso, y solo consigue
-    2118 de los ~5000 wakes/s que pide. Nacidos en la CPU 0 sin fijar, la media baja a 42 µs pero
-    el peor caso sigue en 3.2 ms. Los <code>timer rearms per sleep</code> (2.82, lo correcto es ~1)
-    y repartir 20 workers en 5.8 ms (Linux ~0–200 µs) son los otros dos puntos flojos.
+    ⚠ <strong>El suelo de rodaja es el punto débil.</strong> Con spinner y waker <em>fijados</em> a
+    la misma CPU, Linux conserva el 98 % del throughput del spinner <em>y</em> despierta al waker
+    con 50 µs de retraso (peor caso 65 µs): las dos cosas a la vez. Eclipse cede un tercio del
+    throughput y aun así el waker llega 250 µs tarde de media y 3.3 ms en el peor caso, y solo
+    consigue 2118 de ~5000 wakes/s. El reparto entre un hilo que gira y otro que se aparca también
+    está sesgado (1.51 / 0.49 frente a 1.08 / 0.92).
+    <br><br>
+    A favor de Eclipse: reparte 20 workers nacidos en la CPU 0 por las 20 CPUs en 5.8 ms, mientras
+    que Linux no pasa de 16 dentro del presupuesto de la prueba, y una ráfaga de 32 wakes cuesta
+    0.54× por wake frente a 3.58× en Linux.
   </div>
 </section>
 
-<!-- SOCKETS -->
+<!-- sockets -->
 <section id="sockets">
-  <h2>Sockets / IPC <span class="tag">kernel · nuevo · solo Eclipse</span></h2>
+  <h2>Sockets / IPC <span class="tag">kernel · más bajo mejor</span></h2>
   <p class="section-note">Todo lo que va por encima de un socketpair pelado: TCP/UDP de loopback, UNIX, paso de descriptores y multiplexado.</p>
   <table>
-    <thead><tr><th>Métrica</th><th>Eclipse</th><th>hint Linux</th><th class="hide-sm">vs hint</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">socket()+close() TCP</span></td><td class="val ">2068 ns</td><td class="hint">~1500</td><td class="ratio  hide-sm">≈1.4×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">socket()+close() TCP</span></td><td class="val worse">2068 ns</td><td class="val better">1988 ns</td><td class="hint">~1500</td><td class="ratio  hide-sm">1.0×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">socket()+close() UNIX</span></td><td class="val ">1539 ns</td><td class="hint">~1200</td><td class="ratio  hide-sm">≈1.3×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">socket()+close() UNIX</span></td><td class="val better">1539 ns</td><td class="val worse">1598 ns</td><td class="hint">~1200</td><td class="ratio  hide-sm">0.96×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">TCP loopback round trip</span></td><td class="val ">7.02 µs</td><td class="hint">~12</td><td class="ratio  hide-sm">≈0.58×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">TCP loopback round trip</span></td><td class="val better">7.02 µs</td><td class="val worse">10.1 µs</td><td class="hint">~12</td><td class="ratio good hide-sm">0.70×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">TCP loopback bandwidth</span></td><td class="val better">5004 MB/s</td><td class="hint">&gt;2000</td><td class="ratio good hide-sm">por encima</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">TCP loopback bandwidth</span></td><td class="val better">5004 MB/s</td><td class="val worse">4835 MB/s</td><td class="hint">&gt;2000</td><td class="ratio  hide-sm">1.0×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">TCP connect+accept+close</span></td><td class="val ">10.7 µs</td><td class="hint">~30</td><td class="ratio  hide-sm">≈0.36×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">TCP connect+accept+close</span></td><td class="val better">10.7 µs</td><td class="val worse">16.5 µs</td><td class="hint">~30</td><td class="ratio good hide-sm">0.65×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">UNIX stream RT (bound)</span></td><td class="val ">7.46 µs</td><td class="hint">~9</td><td class="ratio  hide-sm">≈0.83×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">UNIX stream RT (bound)</span></td><td class="val worse">7.46 µs</td><td class="val better">5.91 µs</td><td class="hint">~9</td><td class="ratio bad hide-sm">1.3×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">UNIX datagram round trip</span></td><td class="val ">8.20 µs</td><td class="hint">~8</td><td class="ratio  hide-sm">≈1.0×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">UNIX datagram round trip</span></td><td class="val worse">8.20 µs</td><td class="val better">6.94 µs</td><td class="hint">~8</td><td class="ratio  hide-sm">1.2×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">UDP loopback round trip</span></td><td class="val ">7.15 µs</td><td class="hint">~10</td><td class="ratio  hide-sm">≈0.72×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">UDP loopback round trip</span></td><td class="val better">7.15 µs</td><td class="val worse">10.3 µs</td><td class="hint">~10</td><td class="ratio good hide-sm">0.69×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">SCM_RIGHTS fd pass</span></td><td class="val ">5.59 µs</td><td class="hint">~7</td><td class="ratio  hide-sm">≈0.80×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">SCM_RIGHTS fd pass</span></td><td class="val worse">5.59 µs</td><td class="val better">1.59 µs</td><td class="hint">~7</td><td class="ratio bad hide-sm">3.5×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">recv on empty (EAGAIN)</span></td><td class="val ">920.8 ns</td><td class="hint">~400</td><td class="ratio  hide-sm">≈2.3×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">recv on empty (EAGAIN)</span></td><td class="val worse">920.8 ns</td><td class="val better">162.8 ns</td><td class="hint">~400</td><td class="ratio bad hide-sm">5.7×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">poll(1 fd, ready)</span></td><td class="val ">1338 ns</td><td class="hint">~700</td><td class="ratio  hide-sm">≈1.9×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">poll(1 fd, ready)</span></td><td class="val worse">1338 ns</td><td class="val better">165.4 ns</td><td class="hint">~700</td><td class="ratio bad hide-sm">8.1×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">poll(64 fds, last ready)</span></td><td class="val worse">8361 ns</td><td class="hint">~2500</td><td class="ratio bad hide-sm">≈3.3×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">poll(64 fds, last ready)</span></td><td class="val worse">8361 ns</td><td class="val better">1447 ns</td><td class="hint">~2500</td><td class="ratio bad hide-sm">5.8×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">per extra fd</span></td><td class="val worse">111.5 ns</td><td class="hint">~30</td><td class="ratio bad hide-sm">≈3.7×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">per extra fd</span></td><td class="val worse">111.5 ns</td><td class="val better">20.3 ns</td><td class="hint">~30</td><td class="ratio bad hide-sm">5.5×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">select(64 fds)</span></td><td class="val worse">9014 ns</td><td class="hint">~2500</td><td class="ratio bad hide-sm">≈3.6×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">select(64 fds)</span></td><td class="val worse">9014 ns</td><td class="val better">1580 ns</td><td class="hint">~2500</td><td class="ratio bad hide-sm">5.7×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">epoll_wait(64 fds)</span></td><td class="val worse">6063 ns</td><td class="hint">~800</td><td class="ratio bad hide-sm">≈7.6×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric flag">epoll_wait(64 fds)</span></td><td class="val worse">6063 ns</td><td class="val better">184.1 ns</td><td class="hint">~800</td><td class="ratio bad hide-sm">33×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">epoll / poll</span> <span class="hint">&lt;1 = epoll compensa</span></td><td class="val ">0.73 ×</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">epoll / poll</span> <span class="hint">&lt;1 = epoll compensa</span></td><td class="val worse">0.73 ×</td><td class="val better">0.13 ×</td><td class="hint"></td><td class="ratio bad hide-sm">5.6×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">epoll_ctl ADD+DEL</span></td><td class="val ">1656 ns</td><td class="hint">~1200</td><td class="ratio  hide-sm">≈1.4×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">epoll_ctl ADD+DEL</span></td><td class="val worse">1656 ns</td><td class="val better">645.0 ns</td><td class="hint">~1200</td><td class="ratio bad hide-sm">2.6×</td>
       </tr>
     </tbody>
   </table>
   <div class="callout">
-    La red de loopback está <strong>a la altura o por delante</strong> del orden de magnitud de
-    Linux: TCP round trip 7 µs, connect+accept+close 10.7 µs, 5 GB/s de ancho de banda. Lo que
-    escala mal es el multiplexado: 111 ns por fd extra en <code>poll</code> (Linux ~30) y
-    <code>epoll_wait</code> con 64 fds a 6 µs (Linux ~0.8). epoll sí compensa frente a poll
-    (0.73×), pero un bucle de eventos con cien conexiones paga esa pendiente en cada wake.
+    La pila TCP/UDP de Eclipse <strong>gana a Linux</strong> en loopback: round trip TCP 7.0 µs
+    frente a 10.1, UDP 7.2 frente a 10.3, connect+accept+close 10.7 frente a 16.5, y el mismo ancho
+    de banda. Donde pierde es en el multiplexado: <code>epoll_wait</code> con 64 fds cuesta
+    6 µs frente a 0.18 µs (<strong>33×</strong>), y el ratio epoll/poll de 0.73 frente a 0.13 dice
+    que el epoll de Eclipse todavía recorre buena parte del conjunto en cada llamada. Un servidor
+    con cien conexiones paga eso en cada wake.
   </div>
 </section>
 
-<!-- SMP -->
+<!-- smp -->
 <section id="smp">
   <h2>SMP scaling <span class="tag">kernel · 20 CPUs</span></h2>
-  <p class="section-note">El trabajo es ALU pura en userspace: cualquier cosa por debajo del escalado lineal es del kernel (colocación, contención o CPUs offline).</p>
+  <p class="section-note">El trabajo es ALU pura en userspace: cualquier cosa por debajo del escalado lineal es del kernel. Las filas de escalado (×20 frente a ×1) son independientes del hardware.</p>
   <table>
-    <thead><tr><th>Métrica</th><th>Eclipse</th><th class="hide-sm">antes</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">1 thread aggregate</span></td><td class="val worse">961.0 Mops/s</td><td class="val prev hide-sm">1002 Mops/s</td><td class="val better">1091 Mops/s</td><td class="hint"></td><td class="ratio  hide-sm">0.88×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">1 thread aggregate</span></td><td class="val worse">961.0 Mops/s</td><td class="val better">1075 Mops/s</td><td class="hint"></td><td class="ratio  hide-sm">0.89×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">20 threads aggregate</span></td><td class="val better">20 426 Mops/s</td><td class="val prev hide-sm">15 113 Mops/s</td><td class="val worse">18 544 Mops/s</td><td class="hint"></td><td class="ratio  hide-sm">1.1×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">20 threads aggregate</span></td><td class="val ">20 426 Mops/s</td><td class="val ">20 247 Mops/s</td><td class="hint"></td><td class="ratio  hide-sm">1.01× (empate)</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">scaling efficiency</span></td><td class="val better">106.3 %</td><td class="val prev hide-sm">75.4 %</td><td class="val worse">85.0 %</td><td class="hint">&gt;90</td><td class="ratio good hide-sm">1.3×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">scaling efficiency</span></td><td class="val better">106.3 %</td><td class="val worse">94.2 %</td><td class="hint">&gt;90</td><td class="ratio  hide-sm">1.1×</td>
       </tr>
-      <tr class="subgroup"><td colspan="6">rutas SMP del kernel: contención, shootdowns, wakes cross-CPU</td></tr>
+      <tr class="subgroup"><td colspan="5">rutas SMP del kernel: contención, shootdowns, wakes cross-CPU</td></tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">getpid/s ×1</span></td><td class="val worse">2.92 Mops/s</td><td class="val prev hide-sm">1.98 Mops/s</td><td class="val better">10.6 Mops/s</td><td class="hint"></td><td class="ratio bad hide-sm">0.28×</td>
-      </tr>
-      <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">getpid/s ×20</span></td><td class="val worse">14.4 Mops/s</td><td class="val prev hide-sm">2.41 Mops/s</td><td class="val better">123.4 Mops/s</td><td class="hint"></td><td class="ratio bad hide-sm">0.12×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">getpid/s ×1</span></td><td class="val worse">2.92 Mops/s</td><td class="val better">11.2 Mops/s</td><td class="hint"></td><td class="ratio bad hide-sm">0.26×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">syscall scaling</span></td><td class="val worse">24.7 %</td><td class="val prev hide-sm">6.10 %</td><td class="val better">58.4 %</td><td class="hint">&gt;85</td><td class="ratio bad hide-sm">0.42×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">getpid/s ×20</span></td><td class="val worse">14.4 Mops/s</td><td class="val better">144.9 Mops/s</td><td class="hint"></td><td class="ratio bad hide-sm">0.099×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">mprotect flip, peers idle</span></td><td class="val worse">1574 ns</td><td class="val prev hide-sm">1449 ns</td><td class="val better">1094 ns</td><td class="hint"></td><td class="ratio bad hide-sm">1.4×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">syscall scaling</span></td><td class="val worse">24.7 %</td><td class="val better">64.5 %</td><td class="hint">&gt;85</td><td class="ratio bad hide-sm">0.38×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">mprotect flip, 19 spinning</span></td><td class="val worse">12 701 ns</td><td class="val prev hide-sm">10 080 ns</td><td class="val better">5861 ns</td><td class="hint"></td><td class="ratio bad hide-sm">2.2×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">mprotect flip, peers idle</span></td><td class="val worse">1574 ns</td><td class="val better">953.2 ns</td><td class="hint"></td><td class="ratio bad hide-sm">1.7×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">shootdown cost</span></td><td class="val worse">8.07 ×</td><td class="val prev hide-sm">6.96 ×</td><td class="val better">5.36 ×</td><td class="hint">~2–4 (IPI + ack)</td><td class="ratio bad hide-sm">1.5×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">mprotect flip, 19 spinning</span></td><td class="val worse">12 701 ns</td><td class="val better">4729 ns</td><td class="hint"></td><td class="ratio bad hide-sm">2.7×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">mmap+touch+munmap ×20 vs ×1</span></td><td class="val better">1.51 %</td><td class="val prev hide-sm">1.42 %</td><td class="val worse">0.55 %</td><td class="hint">~40–70</td><td class="ratio good hide-sm">2.7×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">shootdown cost</span></td><td class="val worse">8.07 ×</td><td class="val better">4.96 ×</td><td class="hint">~2–4 (IPI + ack)</td><td class="ratio bad hide-sm">1.6×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">minor faults/s ×1</span></td><td class="val worse">669.2 kflt/s</td><td class="val prev hide-sm">675.5 kflt/s</td><td class="val better">811.9 kflt/s</td><td class="hint"></td><td class="ratio  hide-sm">0.82×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">mmap+touch+munmap ×20 vs ×1</span></td><td class="val worse">1.51 %</td><td class="val better">2.19 %</td><td class="hint">~40–70</td><td class="ratio bad hide-sm">0.69×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">minor faults/s ×20</span></td><td class="val better">789.2 kflt/s</td><td class="val prev hide-sm">900.1 kflt/s</td><td class="val worse">543.4 kflt/s</td><td class="hint"></td><td class="ratio good hide-sm">1.5×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">minor faults/s ×1</span></td><td class="val worse">669.2 kflt/s</td><td class="val better">1038 kflt/s</td><td class="hint"></td><td class="ratio bad hide-sm">0.64×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fault scaling</span></td><td class="val better">5.90 %</td><td class="val prev hide-sm">6.66 %</td><td class="val worse">3.35 %</td><td class="hint">&gt;60</td><td class="ratio good hide-sm">1.8×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">minor faults/s ×20</span></td><td class="val worse">789.2 kflt/s</td><td class="val better">2429 kflt/s</td><td class="hint"></td><td class="ratio bad hide-sm">0.32×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">contended mutex collapse</span></td><td class="val ">23.5 ×</td><td class="val prev hide-sm">16.7 ×</td><td class="val ">16.9 ×</td><td class="hint">~10–40</td><td class="ratio  hide-sm">1.4×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fault scaling</span></td><td class="val worse">5.90 %</td><td class="val better">11.7 %</td><td class="hint">&gt;60</td><td class="ratio bad hide-sm">0.50×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">pipe RT pinned same-CPU</span></td><td class="val worse">5.94 µs</td><td class="val prev hide-sm">123.0 µs</td><td class="val better">2.38 µs</td><td class="hint"></td><td class="ratio bad hide-sm">2.5×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">contended mutex collapse</span></td><td class="val ">23.5 ×</td><td class="val ">18.0 ×</td><td class="hint">~10–40</td><td class="ratio  hide-sm">1.3×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">pipe RT pinned cross-CPU</span></td><td class="val worse">11.5 µs</td><td class="val prev hide-sm">16.5 µs</td><td class="val better">4.73 µs</td><td class="hint"></td><td class="ratio bad hide-sm">2.4×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">pipe RT pinned same-CPU</span></td><td class="val worse">5.94 µs</td><td class="val better">2.04 µs</td><td class="hint"></td><td class="ratio bad hide-sm">2.9×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">cross-CPU wake cost</span></td><td class="val ">1.93 ×</td><td class="val prev hide-sm">0.13 ×</td><td class="val ">1.99 ×</td><td class="hint">~0.5–2</td><td class="ratio  hide-sm">0.97×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">pipe RT pinned cross-CPU</span></td><td class="val worse">11.5 µs</td><td class="val better">4.67 µs</td><td class="hint"></td><td class="ratio bad hide-sm">2.5×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">forks/s ×1</span></td><td class="val better">2448 forks/s</td><td class="val prev hide-sm">14 111 forks/s</td><td class="val worse">488.5 forks/s</td><td class="hint"></td><td class="ratio good hide-sm">5.0×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">cross-CPU wake cost</span></td><td class="val ">1.93 ×</td><td class="val ">2.29 ×</td><td class="hint">~0.5–2</td><td class="ratio  hide-sm">0.84×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">forks/s ×20 procs</span></td><td class="val ">12 834 forks/s</td><td class="val prev hide-sm">17 666 forks/s</td><td class="val ">12 860 forks/s</td><td class="hint"></td><td class="ratio  hide-sm">1.00× (empate)</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">forks/s ×1</span></td><td class="val worse">2448 forks/s</td><td class="val better">11 529 forks/s</td><td class="hint"></td><td class="ratio bad hide-sm">0.21×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fork scaling</span></td><td class="val worse">26.2 %</td><td class="val prev hide-sm">6.26 %</td><td class="val better">131.6 %</td><td class="hint">~50–80</td><td class="ratio bad hide-sm">0.20×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">forks/s ×20 procs</span></td><td class="val worse">12 834 forks/s</td><td class="val better">145 997 forks/s</td><td class="hint"></td><td class="ratio bad hide-sm">0.088×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fairness max/min (2× hogs)</span></td><td class="val">n/a</td><td class="val prev hide-sm">n/a</td><td class="val">n/a</td><td class="hint">&lt;1.5</td><td class="ratio hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork scaling</span></td><td class="val worse">26.2 %</td><td class="val better">63.3 %</td><td class="hint">~50–80</td><td class="ratio bad hide-sm">0.41×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fairness max/min (2× hogs)</span></td><td class="val">n/a</td><td class="val">n/a</td><td class="hint">&lt;1.5</td><td class="ratio hide-sm">—</td>
       </tr>
     </tbody>
   </table>
   <div class="callout">
-    <strong>El escalado SMP ya es lineal:</strong> 20 hilos dan 20 426 Mops/s, un 106 % de
-    eficiencia (antes 75 %, Linux 85 %). El <code>syscall scaling</code> sube de 6 % a 25 % y la
-    anomalía del pipe fijado a la misma CPU ha desaparecido (123 µs → 5.94 µs; el
-    <code>cross-CPU wake cost</code> de 1.93× ya está en rango).
-    <br><br>
-    El <code>fork scaling</code> mejora a 26 %, pero en parte porque la base <code>forks/s ×1</code>
-    ha caído de 14 111 a 2448: con 20 procesos Eclipse queda empatado con Linux en absoluto.
+    El escalado de trabajo en userspace es <strong>perfecto</strong> (106 % frente a 94 % de
+    Linux, mismo agregado con 20 hilos). Lo que no escala es lo que entra al kernel: syscalls al
+    25 % (Linux 65 %), page faults al 6 % (Linux 12 %) y forks al 26 % (Linux 63 %). Con 20
+    procesos haciendo <code>fork</code> a la vez, Linux saca <strong>11×</strong> más forks/s.
+    Son ratios contra la propia máquina, así que QEMU no los explica: hay un lock compartido en
+    esas rutas.
   </div>
 </section>
 
-<!-- DISK -->
+<!-- disk -->
 <section id="disk">
   <h2>Disk <span class="tag">kernel · 32 MiB solicitados</span></h2>
-  <p class="section-note">Ojo al contexto: el espacio libre vuelve a ser distinto (949 380 MiB en este run de Eclipse, 242 547 MiB en el anterior, 466 338 MiB en Linux), así que no es el mismo dispositivo ni el mismo sistema de ficheros.</p>
+  <p class="section-note">Aquí la comparación es la menos justa de la página: Eclipse escribe en un disco virtual de QEMU y Linux en el disco real (949 380 MiB libres en Eclipse frente a 124 553 MiB en Linux). Los 32 MiB entran enteros en la caché de páginas.</p>
   <table>
-    <thead><tr><th>Métrica</th><th>Eclipse</th><th class="hide-sm">antes</th><th>Linux</th><th class="hide-sm">E/L</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th class="hide-sm">E/L</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">seq write (+fsync)</span></td><td class="val worse">352.6 MB/s</td><td class="val prev hide-sm">107.4 MB/s</td><td class="val better">741.3 MB/s</td><td class="ratio bad hide-sm">0.48×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">seq write (+fsync)</span></td><td class="val better">352.6 MB/s</td><td class="val worse">177.0 MB/s</td><td class="ratio good hide-sm">2.0×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">seq read</span></td><td class="val better">273.5 MB/s</td><td class="val prev hide-sm">1.0 GB/s</td><td class="val worse">8.9 GB/s</td><td class="ratio good hide-sm">31×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">seq read</span></td><td class="val better">273.5 MB/s</td><td class="val worse">4.5 GB/s</td><td class="ratio good hide-sm">61×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">rand 4K read</span></td><td class="val worse">13 705 IOPS</td><td class="val prev hide-sm">137 420 IOPS</td><td class="val better">1 921 647 IOPS</td><td class="ratio bad hide-sm">0.0071×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">rand 4K read</span></td><td class="val worse">13 705 IOPS</td><td class="val better">1 681 483 IOPS</td><td class="ratio bad hide-sm">0.0082×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">rand 4K read latency</span></td><td class="val worse">73.0 µs</td><td class="val prev hide-sm">7.28 µs</td><td class="val better">0.52 µs</td><td class="ratio bad hide-sm">140×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">rand 4K read latency</span></td><td class="val worse">73.0 µs</td><td class="val better">0.59 µs</td><td class="ratio bad hide-sm">124×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fsync latency (best)</span></td><td class="val better">0.23 ms</td><td class="val prev hide-sm">1.95 ms</td><td class="val worse">0.92 ms</td><td class="ratio good hide-sm">0.25×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fsync latency (best)</span></td><td class="val better">0.23 ms</td><td class="val worse">1.60 ms</td><td class="ratio good hide-sm">0.14×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">meta create small files</span></td><td class="val better">10 490 files/s</td><td class="val prev hide-sm">452.7 files/s</td><td class="val worse">2014 files/s</td><td class="ratio good hide-sm">5.2×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">meta create small files</span></td><td class="val worse">10 490 files/s</td><td class="val better">62 319 files/s</td><td class="ratio bad hide-sm">0.17×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">meta stat</span></td><td class="val worse">140 300 stats/s</td><td class="val prev hide-sm">57 342 stats/s</td><td class="val better">334 274 stats/s</td><td class="ratio bad hide-sm">0.42×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">meta stat</span></td><td class="val worse">140 300 stats/s</td><td class="val better">1 037 821 stats/s</td><td class="ratio bad hide-sm">0.14×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">meta unlink</span></td><td class="val better">17 783 unlinks/s</td><td class="val prev hide-sm">1072 unlinks/s</td><td class="val worse">4186 unlinks/s</td><td class="ratio good hide-sm">4.2×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">meta unlink</span></td><td class="val worse">17 783 unlinks/s</td><td class="val better">204 507 unlinks/s</td><td class="ratio bad hide-sm">0.087×</td>
       </tr>
     </tbody>
   </table>
   <div class="callout">
-    Metadatos y escritura mejoran mucho (<code>meta create</code> 23×, <code>meta unlink</code>
-    17×, <code>fsync</code> 0.23 ms, mejor que Linux), pero la lectura cae a 273 MB/s y
-    13.7 k IOPS a 73 µs. Esas cifras parecen ya del dispositivo y no de la caché de páginas
-    (las de Linux, 8.9 GB/s y 1.9 M IOPS, sí son de caché: 32 MiB entran enteros en RAM).
-    Es una lectura nuestra, no algo que el benchmark diga; el cambio de dispositivo también
-    puede explicarlo.
+    Las dos victorias de Eclipse (escritura 2× y <code>fsync</code> 7× más rápidos) hay que
+    leerlas con cuidado: es probable que el <code>fsync</code> dentro de QEMU no llegue al disco
+    físico y se quede en la caché del host. Es una interpretación nuestra, no algo que diga el
+    benchmark. Lo demás es claro: Linux lee de la caché de páginas a 4.5 GB/s y 1.7 M IOPS
+    (0.59 µs), mientras Eclipse va a 273 MB/s y 13.7 k IOPS (73 µs), unas
+    <strong>120×</strong> en latencia. Eclipse no está sirviendo estas lecturas desde caché.
   </div>
 </section>
 
-<!-- FS -->
+<!-- fs -->
 <section id="fs">
-  <h2>Filesystem / VFS <span class="tag">kernel · nuevo · solo Eclipse</span></h2>
-  <p class="section-note">En caliente: rutas y descriptores, no megabytes. Los datos se escribieron justo antes y cada lectura empieza en el offset 0, así que aquí responde la caché y el VFS, no el dispositivo.</p>
+  <h2>Filesystem / VFS <span class="tag">kernel · más bajo mejor</span></h2>
+  <p class="section-note">En caliente: rutas y descriptores, no megabytes. Los datos se escribieron justo antes, así que aquí responde la caché y el VFS, no el dispositivo; el disco virtual no influye.</p>
   <table>
-    <thead><tr><th>Métrica</th><th>Eclipse</th><th>hint Linux</th><th class="hide-sm">vs hint</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">open+close, 1 component</span></td><td class="val worse">13 032 ns</td><td class="hint">~1400</td><td class="ratio bad hide-sm">≈9.3×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">open+close, 1 component</span></td><td class="val worse">13 032 ns</td><td class="val better">1094 ns</td><td class="hint">~1400</td><td class="ratio bad hide-sm">12×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">open+close, 9 components</span></td><td class="val worse">40 582 ns</td><td class="hint">~2200</td><td class="ratio bad hide-sm">≈18×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">open+close, 9 components</span></td><td class="val worse">40 582 ns</td><td class="val better">1309 ns</td><td class="hint">~2200</td><td class="ratio bad hide-sm">31×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric flag">path cost per component</span></td><td class="val worse">3444 ns</td><td class="hint">~60</td><td class="ratio bad hide-sm">≈57×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric flag">path cost per component</span></td><td class="val worse">3444 ns</td><td class="val better">26.9 ns</td><td class="hint">~60</td><td class="ratio bad hide-sm">128×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">openat(dirfd, name)</span></td><td class="val worse">8308 ns</td><td class="hint">~1300</td><td class="ratio bad hide-sm">≈6.4×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">openat(dirfd, name)</span></td><td class="val worse">8308 ns</td><td class="val better">1063 ns</td><td class="hint">~1300</td><td class="ratio bad hide-sm">7.8×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">open+close (O_PATH)</span></td><td class="val worse">12 697 ns</td><td class="hint">~1100</td><td class="ratio bad hide-sm">≈12×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">open+close (O_PATH)</span></td><td class="val worse">12 697 ns</td><td class="val better">736.6 ns</td><td class="hint">~1100</td><td class="ratio bad hide-sm">17×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">stat(path)</span></td><td class="val worse">10 111 ns</td><td class="hint">~800</td><td class="ratio bad hide-sm">≈13×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">stat(path)</span></td><td class="val worse">10 111 ns</td><td class="val better">539.0 ns</td><td class="hint">~800</td><td class="ratio bad hide-sm">19×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">lstat(path)</span></td><td class="val worse">10 365 ns</td><td class="hint">~850</td><td class="ratio bad hide-sm">≈12×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">lstat(path)</span></td><td class="val worse">10 365 ns</td><td class="val better">539.1 ns</td><td class="hint">~850</td><td class="ratio bad hide-sm">19×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fstatat(dirfd, name)</span></td><td class="val worse">5613 ns</td><td class="hint">~700</td><td class="ratio bad hide-sm">≈8.0×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fstatat(dirfd, name)</span></td><td class="val worse">5613 ns</td><td class="val better">504.9 ns</td><td class="hint">~700</td><td class="ratio bad hide-sm">11×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fstat(fd)</span></td><td class="val ">1036 ns</td><td class="hint">~400</td><td class="ratio  hide-sm">≈2.6×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fstat(fd)</span></td><td class="val worse">1036 ns</td><td class="val better">210.9 ns</td><td class="hint">~400</td><td class="ratio bad hide-sm">4.9×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">access(F_OK)</span></td><td class="val worse">10 554 ns</td><td class="hint">~750</td><td class="ratio bad hide-sm">≈14×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">access(F_OK)</span></td><td class="val worse">10 554 ns</td><td class="val better">428.8 ns</td><td class="hint">~750</td><td class="ratio bad hide-sm">25×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">readlinkat(symlink)</span></td><td class="val worse">12 689 ns</td><td class="hint">~700</td><td class="ratio bad hide-sm">≈18×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">readlinkat(symlink)</span></td><td class="val worse">12 689 ns</td><td class="val better">444.0 ns</td><td class="hint">~700</td><td class="ratio bad hide-sm">29×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">lseek(SEEK_SET)</span></td><td class="val worse">979.0 ns</td><td class="hint">~250</td><td class="ratio bad hide-sm">≈3.9×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">lseek(SEEK_SET)</span></td><td class="val worse">979.0 ns</td><td class="val better">115.4 ns</td><td class="hint">~250</td><td class="ratio bad hide-sm">8.5×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">dup+close</span></td><td class="val ">1639 ns</td><td class="hint">~700</td><td class="ratio  hide-sm">≈2.3×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">dup+close</span></td><td class="val worse">1639 ns</td><td class="val better">224.9 ns</td><td class="hint">~700</td><td class="ratio bad hide-sm">7.3×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fcntl(F_GETFL)</span></td><td class="val ">502.6 ns</td><td class="hint">~250</td><td class="ratio  hide-sm">≈2.0×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fcntl(F_GETFL)</span></td><td class="val worse">502.6 ns</td><td class="val better">108.6 ns</td><td class="hint">~250</td><td class="ratio bad hide-sm">4.6×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">pipe()+close ×2</span></td><td class="val ">4318 ns</td><td class="hint">~3000</td><td class="ratio  hide-sm">≈1.4×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">pipe()+close ×2</span></td><td class="val worse">4318 ns</td><td class="val better">1509 ns</td><td class="hint">~3000</td><td class="ratio bad hide-sm">2.9×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">lseek+read 4 KiB (cache)</span></td><td class="val worse">5990 ns</td><td class="hint">~800</td><td class="ratio bad hide-sm">≈7.5×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">lseek+read 4 KiB (cache)</span></td><td class="val worse">5990 ns</td><td class="val better">420.9 ns</td><td class="hint">~800</td><td class="ratio bad hide-sm">14×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">pread 4 KiB (cache)</span></td><td class="val worse">5614 ns</td><td class="hint">~500</td><td class="ratio bad hide-sm">≈11×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">pread 4 KiB (cache)</span></td><td class="val worse">5614 ns</td><td class="val better">292.8 ns</td><td class="hint">~500</td><td class="ratio bad hide-sm">19×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">lseek+read 64 KiB (cache)</span></td><td class="val worse">2957 MiB/s</td><td class="hint">&gt;5000</td><td class="ratio bad hide-sm">por debajo</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">lseek+read 64 KiB (cache)</span></td><td class="val worse">2957 MiB/s</td><td class="val better">26 193 MiB/s</td><td class="hint">&gt;5000</td><td class="ratio bad hide-sm">0.11×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">mmap+touch 1 MiB file</span></td><td class="val better">6377 MiB/s</td><td class="hint">&gt;1500</td><td class="ratio good hide-sm">por encima</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">mmap+touch 1 MiB file</span></td><td class="val worse">6377 MiB/s</td><td class="val better">25 737 MiB/s</td><td class="hint">&gt;1500</td><td class="ratio bad hide-sm">0.25×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">getdents, 256 entries</span></td><td class="val worse">982.2 ns/entry</td><td class="hint">~100</td><td class="ratio bad hide-sm">≈9.8×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">getdents, 256 entries</span></td><td class="val worse">982.2 ns/entry</td><td class="val better">171.5 ns/entry</td><td class="hint">~100</td><td class="ratio bad hide-sm">5.7×</td>
       </tr>
-      <tr class="subgroup"><td colspan="4">procfs (se genera al leer; lo que pagan ps y top)</td></tr>
+      <tr class="subgroup"><td colspan="5">procfs (se genera al leer; lo que pagan ps y top)</td></tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">/proc/self/stat</span></td><td class="val worse">83 617 ns</td><td class="hint">~5000</td><td class="ratio bad hide-sm">≈17×</td>
-      </tr>
-      <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">/proc/self/status</span></td><td class="val worse">88 163 ns</td><td class="hint">~9000</td><td class="ratio bad hide-sm">≈9.8×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">/proc/self/stat</span></td><td class="val worse">83 617 ns</td><td class="val better">3627 ns</td><td class="hint">~5000</td><td class="ratio bad hide-sm">23×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">/proc/self/maps</span></td><td class="val worse">75 135 ns</td><td class="hint">~15000</td><td class="ratio bad hide-sm">≈5.0×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">/proc/self/status</span></td><td class="val worse">88 163 ns</td><td class="val better">5708 ns</td><td class="hint">~9000</td><td class="ratio bad hide-sm">15×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">/proc/uptime</span></td><td class="val worse">36 371 ns</td><td class="hint">~4000</td><td class="ratio bad hide-sm">≈9.1×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">/proc/self/maps</span></td><td class="val worse">75 135 ns</td><td class="val better">4504 ns</td><td class="hint">~15000</td><td class="ratio bad hide-sm">17×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric flag">/proc/meminfo</span></td><td class="val worse">1 483 372 ns</td><td class="hint">~8000</td><td class="ratio bad hide-sm">≈185×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">/proc/uptime</span></td><td class="val worse">36 371 ns</td><td class="val better">3419 ns</td><td class="hint">~4000</td><td class="ratio bad hide-sm">11×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">/proc/self/task listing</span></td><td class="val worse">18 202 ns/entry</td><td class="hint">~2000</td><td class="ratio bad hide-sm">≈9.1×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric flag">/proc/meminfo</span></td><td class="val worse">1 483 372 ns</td><td class="val better">4222 ns</td><td class="hint">~8000</td><td class="ratio bad hide-sm">351×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">/proc/self/task listing</span></td><td class="val worse">18 202 ns/entry</td><td class="val better">426.6 ns/entry</td><td class="hint">~2000</td><td class="ratio bad hide-sm">43×</td>
       </tr>
     </tbody>
   </table>
   <div class="callout warn">
-    ⚠ <strong>La resolución de rutas es el cuello de botella más claro del run.</strong>
-    Cada componente de ruta cuesta 3.4 µs (Linux ~60 ns, unas 57×), así que cualquier
-    <code>open</code>, <code>stat</code> o <code>access</code> por ruta ronda los 10–13 µs.
-    Con un descriptor (<code>fstatat</code>, <code>openat</code>) el coste cae a la mitad.
-    En procfs, <code>/proc/meminfo</code> tarda <strong>1.5 ms</strong> por lectura (Linux ~8 µs):
-    es lo que paga <code>top</code> en cada refresco.
+    ⚠ <strong>La resolución de rutas es el cuello de botella más claro de toda la página.</strong>
+    Cada componente de ruta cuesta 3.4 µs en Eclipse y 27 ns en Linux: <strong>128×</strong>. Por
+    eso cualquier <code>open</code>, <code>stat</code> o <code>access</code> por ruta sale 12–25×
+    más lento, mientras que las operaciones sobre un descriptor ya abierto quedan en 4–8×, más
+    cerca del coste base de syscall. En procfs, <code>/proc/meminfo</code> tarda
+    <strong>1.5 ms</strong> frente a 4 µs (350×): es lo que paga <code>top</code> en cada refresco.
   </div>
 </section>
 
-<!-- HEAP -->
+<!-- heap -->
 <section id="heap">
-  <h2>Heap / memoria anónima <span class="tag">nuevo · solo Eclipse</span></h2>
-  <p class="section-note">Cómo consigue memoria un programa. Las filas <span style="color:var(--user)">[user]</span> son el allocator de la libc; las <span style="color:var(--kernel)">[kernel]</span>, el mmap/munmap que hay debajo.</p>
+  <h2>Heap / memoria anónima <span class="tag">más bajo mejor salvo MiB/s</span></h2>
+  <p class="section-note">Cómo consigue memoria un programa. Las filas <span style="color:var(--user)">[user]</span> son el allocator de la libc (musl en Eclipse, glibc en Linux, así que no es solo el kernel); las <span style="color:var(--kernel)">[kernel]</span>, el mmap/munmap que hay debajo.</p>
   <table>
-    <thead><tr><th>Métrica</th><th>Eclipse</th><th>hint Linux</th><th class="hide-sm">vs hint</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="kind user">user</span><span class="metric">malloc+free 64 B</span></td><td class="val worse">115.1 ns</td><td class="hint">~20</td><td class="ratio bad hide-sm">≈5.8×</td>
+        <td><span class="kind user">user</span><span class="metric">malloc+free 64 B</span></td><td class="val worse">115.1 ns</td><td class="val better">104.5 ns</td><td class="hint">~20</td><td class="ratio  hide-sm">1.1×</td>
       </tr>
       <tr>
-        <td><span class="kind user">user</span><span class="metric">malloc+free 4 KiB</span></td><td class="val worse">252.4 ns</td><td class="hint">~45</td><td class="ratio bad hide-sm">≈5.6×</td>
+        <td><span class="kind user">user</span><span class="metric">malloc+free 4 KiB</span></td><td class="val worse">252.4 ns</td><td class="val better">148.8 ns</td><td class="hint">~45</td><td class="ratio bad hide-sm">1.7×</td>
       </tr>
       <tr>
-        <td><span class="kind user">user</span><span class="metric flag">malloc+free 256 KiB</span></td><td class="val worse">9085 ns</td><td class="hint">~60</td><td class="ratio bad hide-sm">≈151×</td>
+        <td><span class="kind user">user</span><span class="metric">malloc+free 256 KiB</span></td><td class="val worse">9085 ns</td><td class="val better">4019 ns</td><td class="hint">~60</td><td class="ratio bad hide-sm">2.3×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">malloc+free 64 MiB</span></td><td class="val worse">301 137 ns</td><td class="hint">~12000</td><td class="ratio bad hide-sm">≈25×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">malloc+free 64 MiB</span></td><td class="val worse">301 137 ns</td><td class="val better">170 638 ns</td><td class="hint">~12000</td><td class="ratio bad hide-sm">1.8×</td>
       </tr>
       <tr>
-        <td><span class="kind user">user</span><span class="metric">calloc 4 KiB (zeroed)</span></td><td class="val worse">293.2 ns</td><td class="hint">~70</td><td class="ratio bad hide-sm">≈4.2×</td>
+        <td><span class="kind user">user</span><span class="metric">calloc 4 KiB (zeroed)</span></td><td class="val worse">293.2 ns</td><td class="val better">189.5 ns</td><td class="hint">~70</td><td class="ratio bad hide-sm">1.5×</td>
       </tr>
       <tr>
-        <td><span class="kind user">user</span><span class="metric">malloc churn, 512 live</span></td><td class="val worse">381.4 ns</td><td class="hint">~40</td><td class="ratio bad hide-sm">≈9.5×</td>
+        <td><span class="kind user">user</span><span class="metric">malloc churn, 512 live</span></td><td class="val worse">381.4 ns</td><td class="val better">103.7 ns</td><td class="hint">~40</td><td class="ratio bad hide-sm">3.7×</td>
       </tr>
       <tr>
-        <td><span class="kind user">user</span><span class="metric">realloc 1K→256K doubling</span></td><td class="val worse">143 886 ns</td><td class="hint">~8500</td><td class="ratio bad hide-sm">≈17×</td>
+        <td><span class="kind user">user</span><span class="metric">realloc 1K→256K doubling</span></td><td class="val worse">143 886 ns</td><td class="val better">80 665 ns</td><td class="hint">~8500</td><td class="ratio bad hide-sm">1.8×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">sbrk +64K/-64K</span></td><td class="val ">n/a</td><td class="hint">~1500</td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">sbrk +64K/-64K</span></td><td class="val">n/a</td><td class="val">n/a</td><td class="hint">~1500</td><td class="ratio hide-sm">—</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">mmap+touch+munmap 1 MiB</span></td><td class="val ">2441 MiB/s</td><td class="hint">~2400</td><td class="ratio  hide-sm">≈1.0×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">mmap+touch+munmap 1 MiB</span></td><td class="val worse">2441 MiB/s</td><td class="val better">4231 MiB/s</td><td class="hint">~2400</td><td class="ratio bad hide-sm">0.58×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">same, MAP_POPULATE</span></td><td class="val ">2422 MiB/s</td><td class="hint">~4000</td><td class="ratio  hide-sm">≈0.61×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">same, MAP_POPULATE</span></td><td class="val worse">2422 MiB/s</td><td class="val better">6254 MiB/s</td><td class="hint">~4000</td><td class="ratio bad hide-sm">0.39×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">MADV_DONTNEED+refault 1 MiB</span></td><td class="val ">2632 MiB/s</td><td class="hint">~2400</td><td class="ratio  hide-sm">≈1.1×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">MADV_DONTNEED+refault 1 MiB</span></td><td class="val worse">2632 MiB/s</td><td class="val better">4294 MiB/s</td><td class="hint">~2400</td><td class="ratio bad hide-sm">0.61×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">munmap 1 MiB resident</span></td><td class="val ">26 886 MiB/s</td><td class="hint">~25000</td><td class="ratio  hide-sm">≈1.1×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">munmap 1 MiB resident</span></td><td class="val worse">26 886 MiB/s</td><td class="val better">35 589 MiB/s</td><td class="hint">~25000</td><td class="ratio bad hide-sm">0.76×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">munmap 16 MiB resident</span></td><td class="val ">25 236 MiB/s</td><td class="hint">~14000</td><td class="ratio  hide-sm">≈1.8×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">munmap 16 MiB resident</span></td><td class="val worse">25 236 MiB/s</td><td class="val better">600 446 MiB/s</td><td class="hint">~14000</td><td class="ratio bad hide-sm">0.042×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">mprotect 1 MiB, both ways</span></td><td class="val worse">79 630 ns</td><td class="hint">~20000</td><td class="ratio bad hide-sm">≈4.0×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">mprotect 1 MiB, both ways</span></td><td class="val worse">79 630 ns</td><td class="val better">9455 ns</td><td class="hint">~20000</td><td class="ratio bad hide-sm">8.4×</td>
       </tr>
     </tbody>
   </table>
   <div class="callout">
-    El allocator de la libc es 5–10× más lento que el de Linux en los casos pequeños, y el de
-    256 KiB (9 µs, Linux ~60 ns) sugiere que ese tamaño va directo a <code>mmap</code> en cada
-    llamada (<code>mmap calls/op</code> = 1.00). El teardown (<code>munmap</code>) va igual o
-    mejor que Linux. <code>MAP_POPULATE</code> da lo mismo que sin él: el flag se acepta pero no
-    se adelantan las páginas.
+    Las filas del allocator quedan a 1.1–2.3× de Linux, salvo el <code>churn</code> (3.7×).
+    En el kernel, <code>MAP_POPULATE</code> no hace nada en Eclipse (da lo mismo que sin el flag,
+    mientras que a Linux le sube de 4.2 a 6.3 GB/s), y deshacer un mapeo grande escala mal:
+    <code>munmap</code> de 16 MiB va a 25 GB/s frente a 600 GB/s, señal de que el teardown recorre
+    algo por página en vez de por rango. <code>mprotect</code> de 1 MiB cuesta 8.4× más.
   </div>
 </section>
 
-<!-- SIGNALS -->
+<!-- signals -->
 <section id="signals">
-  <h2>Signals <span class="tag">kernel · nuevo · solo Eclipse</span></h2>
+  <h2>Signals <span class="tag">kernel · más bajo mejor</span></h2>
   <p class="section-note">Entrega, faults y si las syscalls se reanudan.</p>
   <table>
-    <thead><tr><th>Métrica</th><th>Eclipse</th><th>hint Linux</th><th class="hide-sm">vs hint</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">kill(self)+handler</span></td><td class="val worse">8153 ns</td><td class="hint">~1500</td><td class="ratio bad hide-sm">≈5.4×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">kill(self)+handler</span></td><td class="val worse">8153 ns</td><td class="val better">1039 ns</td><td class="hint">~1500</td><td class="ratio bad hide-sm">7.8×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">block+pending+unblock</span></td><td class="val worse">8381 ns</td><td class="hint">~2500</td><td class="ratio bad hide-sm">≈3.4×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">block+pending+unblock</span></td><td class="val worse">8381 ns</td><td class="val better">1395 ns</td><td class="hint">~2500</td><td class="ratio bad hide-sm">6.0×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">kill(child)+handler+pipe</span></td><td class="val ">18.7 µs</td><td class="hint">~25</td><td class="ratio  hide-sm">≈0.75×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">kill(child)+handler+pipe</span></td><td class="val worse">18.7 µs</td><td class="val better">5.84 µs</td><td class="hint">~25</td><td class="ratio bad hide-sm">3.2×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">SIGSEGV fault+handler+retry</span></td><td class="val ">10 405 ns</td><td class="hint">~7000</td><td class="ratio  hide-sm">≈1.5×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">SIGSEGV fault+handler+retry</span></td><td class="val worse">10 405 ns</td><td class="val better">2980 ns</td><td class="hint">~7000</td><td class="ratio bad hide-sm">3.5×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">interrupted read, over 2×20ms</span></td><td class="val better">22.9 µs</td><td class="hint">~150</td><td class="ratio good hide-sm">≈0.15×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">interrupted read, over 2×20ms</span> <span class="hint">(una sola muestra)</span></td><td class="val better">22.9 µs</td><td class="val worse">37.8 µs</td><td class="hint">~150</td><td class="ratio good hide-sm">0.61×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">sigsuspend wake lateness</span></td><td class="val ">58.0 µs</td><td class="hint">~60</td><td class="ratio  hide-sm">≈0.97×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">sigsuspend wake lateness</span></td><td class="val worse">58.0 µs</td><td class="val better">11.4 µs</td><td class="hint">~60</td><td class="ratio bad hide-sm">5.1×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">SA_RESTART (read se reanuda)</span></td><td class="val pass">PASS</td><td class="val pass">PASS</td><td class="hint"></td><td class="ratio hide-sm">—</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">sigaltstack (SS_ONSTACK)</span></td><td class="val pass">PASS</td><td class="val pass">PASS</td><td class="hint"></td><td class="ratio hide-sm">—</td>
       </tr>
     </tbody>
   </table>
   <div class="callout">
-    Las dos comprobaciones de corrección pasan: <strong>SA_RESTART</strong> reanuda la lectura
-    interrumpida sin que el llamante vea <code>EINTR</code>, y <strong>sigaltstack</strong>
-    ejecuta el handler en la pila alternativa, así que un desbordamiento de pila es entregable.
-    La entrega en sí (~8 µs) es 5× más cara que en Linux.
+    Las dos comprobaciones de corrección pasan en ambos: <strong>SA_RESTART</strong> reanuda la
+    lectura interrumpida sin <code>EINTR</code>, y <strong>sigaltstack</strong> ejecuta el handler
+    en la pila alternativa. En velocidad, la entrega de una señal cuesta ~8 µs en Eclipse frente a
+    ~1 µs en Linux (6–8×). La fila <code>interrupted read</code> es una sola muestra y oscila 2×
+    entre runs, así que la aparente ventaja de Eclipse no cuenta.
   </div>
 </section>
 
-<!-- FUTEX -->
+<!-- futex -->
 <section id="futex">
-  <h2>Futex / locks con contención <span class="tag">kernel · nuevo · solo Eclipse</span></h2>
-  <p class="section-note">Lo que cuesta de verdad un lock. Bajo hypervisor los valores absolutos de las filas que despiertan un hilo son de la máquina; los ratios son los que viajan.</p>
+  <h2>Futex / locks con contención <span class="tag">kernel · más bajo mejor</span></h2>
+  <p class="section-note">Lo que cuesta de verdad un lock. Las filas que despiertan un hilo pagan la salida de la VM en Eclipse, así que aquí los ratios 1/16/64 son lo que viaja.</p>
   <table>
-    <thead><tr><th>Métrica</th><th>Eclipse</th><th>hint Linux</th><th class="hide-sm">vs hint</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="kind user">user</span><span class="metric">mutex lock+unlock, alone</span></td><td class="val ">14.0 ns</td><td class="hint">~20</td><td class="ratio  hide-sm">≈0.70×</td>
+        <td><span class="kind user">user</span><span class="metric">mutex lock+unlock, alone</span></td><td class="val worse">14.0 ns</td><td class="val better">12.9 ns</td><td class="hint">~20</td><td class="ratio  hide-sm">1.1×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">FUTEX_WAKE, nobody waiting</span></td><td class="val ">578.4 ns</td><td class="hint">~500</td><td class="ratio  hide-sm">≈1.2×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">FUTEX_WAKE, nobody waiting</span></td><td class="val worse">578.4 ns</td><td class="val better">108.1 ns</td><td class="hint">~500</td><td class="ratio bad hide-sm">5.4×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">mutex lock+unlock, 2 threads</span></td><td class="val better">130.7 ns</td><td class="hint">~1500</td><td class="ratio good hide-sm">≈0.087×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">mutex lock+unlock, 2 threads</span></td><td class="val better">130.7 ns</td><td class="val worse">226.2 ns</td><td class="hint">~1500</td><td class="ratio good hide-sm">0.58×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">contended / alone</span></td><td class="val better">9.36 ×</td><td class="hint">~50</td><td class="ratio good hide-sm">≈0.19×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">contended / alone</span></td><td class="val better">9.36 ×</td><td class="val worse">17.5 ×</td><td class="hint">~50</td><td class="ratio good hide-sm">0.53×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">FUTEX_WAKE issue, 1 parked</span></td><td class="val ">2132 ns</td><td class="hint">~1500</td><td class="ratio  hide-sm">≈1.4×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">FUTEX_WAKE issue, 1 parked</span></td><td class="val worse">2132 ns</td><td class="val better">1560 ns</td><td class="hint">~1500</td><td class="ratio bad hide-sm">1.4×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">FUTEX_WAKE issue, 64 parked</span></td><td class="val ">2064 ns</td><td class="hint">~1600</td><td class="ratio  hide-sm">≈1.3×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">FUTEX_WAKE issue, 16 parked</span></td><td class="val worse">2208 ns</td><td class="val better">1801 ns</td><td class="hint">~1600</td><td class="ratio  hide-sm">1.2×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">64-queue / 1-queue issue</span> <span class="hint">&gt;1 = la cola se recorre</span></td><td class="val ">0.97 ×</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">FUTEX_WAKE issue, 64 parked</span></td><td class="val worse">2064 ns</td><td class="val better">1819 ns</td><td class="hint">~1600</td><td class="ratio  hide-sm">1.1×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">wake+observe, 1 parked</span></td><td class="val ">8.36 µs</td><td class="hint">~3</td><td class="ratio  hide-sm">≈2.8×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">64-queue / 1-queue issue</span> <span class="hint">&gt;1 = la cola se recorre</span></td><td class="val better">0.97 ×</td><td class="val worse">1.17 ×</td><td class="hint"></td><td class="ratio  hide-sm">0.83×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">wake+observe, 64 parked</span></td><td class="val ">8.73 µs</td><td class="hint">~6</td><td class="ratio  hide-sm">≈1.5×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">wake+observe, 1 parked</span></td><td class="val better">8.36 µs</td><td class="val worse">10.0 µs</td><td class="hint">~3</td><td class="ratio  hide-sm">0.84×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">condvar signal, 16 waiting</span></td><td class="val ">4.59 µs</td><td class="hint">~12</td><td class="ratio  hide-sm">≈0.38×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">wake+observe, 16 parked</span></td><td class="val better">8.65 µs</td><td class="val worse">63.6 µs</td><td class="hint">~4</td><td class="ratio good hide-sm">0.14×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">condvar broadcast, 16</span></td><td class="val ">126.3 µs</td><td class="hint">~100</td><td class="ratio  hide-sm">≈1.3×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">wake+observe, 64 parked</span></td><td class="val better">8.73 µs</td><td class="val worse">58.9 µs</td><td class="hint">~6</td><td class="ratio good hide-sm">0.15×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">FUTEX_WAIT 200us timeout</span></td><td class="val ">243.3 µs</td><td class="hint">~250</td><td class="ratio  hide-sm">≈0.97×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">64-queue / 1-queue trip</span></td><td class="val better">1.04 ×</td><td class="val worse">5.87 ×</td><td class="hint"></td><td class="ratio good hide-sm">0.18×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">sem_post/sem_wait round trip</span></td><td class="val better">0.34 µs</td><td class="hint">~8</td><td class="ratio good hide-sm">≈0.043×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">condvar signal, 16 waiting</span></td><td class="val worse">4.59 µs</td><td class="val better">3.38 µs</td><td class="hint">~12</td><td class="ratio bad hide-sm">1.4×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">condvar broadcast, 16</span></td><td class="val worse">126.3 µs</td><td class="val better">91.3 µs</td><td class="hint">~100</td><td class="ratio bad hide-sm">1.4×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">FUTEX_WAIT 200us timeout</span></td><td class="val ">243.3 µs</td><td class="val ">256.7 µs</td><td class="hint">~250</td><td class="ratio  hide-sm">0.95×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">sem_post/sem_wait round trip</span></td><td class="val better">0.34 µs</td><td class="val worse">0.76 µs</td><td class="hint">~8</td><td class="ratio good hide-sm">0.45×</td>
       </tr>
     </tbody>
   </table>
   <div class="callout">
-    Buen resultado: el wake de futex es <strong>O(1)</strong> (1 o 64 en cola cuesta lo mismo,
-    0.97×), el mutex con dos hilos compitiendo cuesta 131 ns (Linux ~1.5 µs) y el
-    <code>FUTEX_WAIT</code> con timeout de 200 µs vuelve a los 243 µs, es decir, espera de verdad.
+    La sección más favorable a Eclipse. Su futex es <strong>O(1)</strong> (1 o 64 en cola cuesta
+    lo mismo, 0.97×), el mutex con dos hilos compitiendo cuesta 131 ns frente a 226 ns, y el
+    semáforo es 2× más rápido. Con 16 o 64 hilos aparcados, despertar uno y verlo correr cuesta
+    ~8.7 µs en Eclipse y ~60 µs en Linux (<strong>7×</strong> a favor de Eclipse): en Linux el
+    hilo despertado tarda en conseguir CPU. El único coste peor es el <code>FUTEX_WAKE</code> sin
+    nadie esperando (5.4×), que es el suelo de syscall otra vez.
   </div>
 </section>
 
-<!-- PROCESS -->
+<!-- process -->
 <section id="process">
   <h2>Process creation <span class="tag">kernel · más bajo mejor</span></h2>
-  <p class="section-note">La prueba de copy-on-write. Eclipse sigue ganando en absoluto, y ahora también bajo carga.</p>
+  <p class="section-note">La prueba de copy-on-write. Linux hace COW de verdad: su coste no crece con la memoria residente.</p>
   <table>
-    <thead><tr><th>Métrica</th><th>Eclipse</th><th class="hide-sm">antes</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fork + exit</span></td><td class="val better">419.6 µs</td><td class="val prev hide-sm">79.9 µs</td><td class="val worse">2442 µs</td><td class="hint">~70</td><td class="ratio good hide-sm">0.17×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork + exit</span></td><td class="val worse">419.6 µs</td><td class="val better">97.0 µs</td><td class="hint">~70</td><td class="ratio bad hide-sm">4.3×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fork + exit, 1 MiB resident</span></td><td class="val better">569.9 µs</td><td class="val prev hide-sm">250.3 µs</td><td class="val worse">2586 µs</td><td class="hint"></td><td class="ratio good hide-sm">0.22×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork + exit, 1 MiB resident</span></td><td class="val worse">569.9 µs</td><td class="val better">138.4 µs</td><td class="hint"></td><td class="ratio bad hide-sm">4.1×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fork + exit, 16 MiB resident</span></td><td class="val ">3956 µs</td><td class="val prev hide-sm">3423 µs</td><td class="val ">4011 µs</td><td class="hint"></td><td class="ratio  hide-sm">0.99× (empate)</td>
+        <td><span class="kind kernel">kernel</span><span class="metric flag">fork + exit, 16 MiB resident</span></td><td class="val worse">3956 µs</td><td class="val better">91.7 µs</td><td class="hint"></td><td class="ratio bad hide-sm">43×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fork cost per MiB resident</span></td><td class="val worse">225.8 µs/MiB</td><td class="val prev hide-sm">211.5 µs/MiB</td><td class="val better">95.0 µs/MiB</td><td class="hint"></td><td class="ratio bad hide-sm">2.4×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork cost per MiB resident</span></td><td class="val ">225.8 µs/MiB</td><td class="val ">0.00 µs/MiB</td><td class="hint"></td><td class="ratio bad hide-sm">—</td>
       </tr>
       <tr>
-        <td><span class="metric">vs memcpy 1 MiB aquí</span></td><td class="val ">184.9 µs/MiB</td><td class="val prev hide-sm">77.7 µs/MiB</td><td class="val ">241.0 µs/MiB</td><td class="hint">referencia</td><td class="ratio  hide-sm">—</td>
+        <td><span class="metric">vs memcpy 1 MiB aquí</span></td><td class="val ">184.9 µs/MiB</td><td class="val ">125.0 µs/MiB</td><td class="hint">referencia</td><td class="ratio  hide-sm">—</td>
       </tr>
       <tr>
-        <td><span class="metric flag">fork copy ratio ⚠</span></td><td class="val worse">1.22 ×</td><td class="val prev hide-sm">2.72 ×</td><td class="val better">0.39 ×</td><td class="hint">COW ~0.3, eager ≥1</td><td class="ratio bad hide-sm">3.1×</td>
+        <td><span class="metric flag">fork copy ratio ⚠</span></td><td class="val ">1.22 ×</td><td class="val ">0.00 ×</td><td class="hint">COW ~0.3, eager ≥1</td><td class="ratio bad hide-sm">—</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fork + exit, 8 mappings</span></td><td class="val better">587.9 µs</td><td class="val prev hide-sm">268.9 µs</td><td class="val worse">2779 µs</td><td class="hint"></td><td class="ratio good hide-sm">0.21×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork + exit, 8 mappings</span></td><td class="val worse">587.9 µs</td><td class="val better">153.5 µs</td><td class="hint"></td><td class="ratio bad hide-sm">3.8×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fork + exit, 256 mappings</span></td><td class="val better">1044 µs</td><td class="val prev hide-sm">652.5 µs</td><td class="val worse">3928 µs</td><td class="hint"></td><td class="ratio good hide-sm">0.27×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork + exit, 256 mappings</span></td><td class="val worse">1044 µs</td><td class="val better">632.5 µs</td><td class="hint"></td><td class="ratio bad hide-sm">1.7×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fork cost per mapping</span></td><td class="val better">1.84 µs/map</td><td class="val prev hide-sm">1.55 µs/map</td><td class="val worse">4.63 µs/map</td><td class="hint"></td><td class="ratio good hide-sm">0.40×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork cost per mapping</span></td><td class="val better">1.84 µs/map</td><td class="val worse">1.93 µs/map</td><td class="hint"></td><td class="ratio  hide-sm">0.95×</td>
       </tr>
-      <tr class="subgroup"><td colspan="6">con 19 procesos CPU-bound compitiendo</td></tr>
+      <tr class="subgroup"><td colspan="5">con 19 procesos CPU-bound compitiendo</td></tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fork+exit, 8 maps, load</span></td><td class="val better">806.5 µs</td><td class="val prev hide-sm">25 658 µs</td><td class="val worse">1542 µs</td><td class="hint"></td><td class="ratio good hide-sm">0.52×</td>
-      </tr>
-      <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fork+exit, 256 maps, load</span></td><td class="val better">1595 µs</td><td class="val prev hide-sm">25 384 µs</td><td class="val worse">2078 µs</td><td class="hint"></td><td class="ratio good hide-sm">0.77×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork+exit, 8 maps, load</span></td><td class="val worse">806.5 µs</td><td class="val better">98.4 µs</td><td class="hint"></td><td class="ratio bad hide-sm">8.2×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fork cost per mapping, load</span></td><td class="val worse">3.18 µs/map</td><td class="val prev hide-sm">0.00 µs/map</td><td class="val better">2.16 µs/map</td><td class="hint"></td><td class="ratio bad hide-sm">1.5×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork+exit, 256 maps, load</span></td><td class="val worse">1595 µs</td><td class="val better">611.8 µs</td><td class="hint"></td><td class="ratio bad hide-sm">2.6×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fork + exec(self, static)</span></td><td class="val better">711.5 µs</td><td class="val prev hide-sm">207.1 µs</td><td class="val worse">2286 µs</td><td class="hint">~350</td><td class="ratio good hide-sm">0.31×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork cost per mapping, load</span></td><td class="val worse">3.18 µs/map</td><td class="val better">2.07 µs/map</td><td class="hint"></td><td class="ratio bad hide-sm">1.5×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">fork + exec(/bin/sh -c :)</span></td><td class="val better">1112 µs</td><td class="val prev hide-sm">990.7 µs</td><td class="val worse">4599 µs</td><td class="hint">~1200</td><td class="ratio good hide-sm">0.24×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork + exec(self, static)</span></td><td class="val worse">711.5 µs</td><td class="val better">175.0 µs</td><td class="hint">~350</td><td class="ratio bad hide-sm">4.1×</td>
+      </tr>
+      <tr>
+        <td><span class="kind kernel">kernel</span><span class="metric">fork + exec(/bin/sh -c :)</span></td><td class="val worse">1112 µs</td><td class="val better">466.8 µs</td><td class="hint">~1200</td><td class="ratio bad hide-sm">2.4×</td>
       </tr>
     </tbody>
   </table>
   <div class="callout warn">
-    ⚠ <strong>El <code>fork</code> de Eclipse sigue copiando eager</strong> (<code>cow-fork=OFF</code>
-    en el modo del scheduler). El ratio baja de 2.72× a 1.22×, pero sigue por encima de 1:
-    bifurcar cuesta más que copiar el proceso con memcpy, frente al 0.39× de Linux.
-    <br><br>
-    Lo que más cambia es <strong>bajo carga</strong>: <code>fork+exit</code> pasa de 25.7 ms a
-    0.8 ms y ahora gana a Linux (1.5 ms), y el coste por mapeo vuelve a verse (3.18 µs/map)
-    porque ya no lo tapa la espera de CPU. A cambio, el <code>fork + exit</code> en reposo es
-    5× más lento que en el run anterior (420 µs frente a 80 µs), aunque sigue 5.8× por delante
-    de Linux.
+    ⚠ <strong>Con Linux en hardware real, Eclipse pierde casi todas las filas de proceso.</strong>
+    La clave es el copy-on-write: a Linux le cuesta lo mismo bifurcar un proceso de 16 MiB que uno
+    vacío (92 µs; coste por MiB 0), mientras que Eclipse copia cada página al bifurcar
+    (<code>cow-fork=OFF</code>, ratio 1.22×) y tarda 4 ms, <strong>43×</strong>. El coste por mapeo,
+    en cambio, es igual en los dos (1.8 frente a 1.9 µs/map), así que la diferencia está entera en
+    la copia eager. Activar COW en el fork es la mejora con más impacto de la página: lo paga cada
+    shell en cada comando.
   </div>
 </section>
 
-<!-- GRAPHICS -->
+<!-- drm -->
 <section id="drm">
-  <h2>Graphics / DRM-KMS <span class="tag">kernel · nuevo · solo Eclipse</span></h2>
-  <p class="section-note"><code>/dev/dri/card0</code>, 1920×1080. Un compositor tenía el display, así que las filas de page flip y cursor se saltaron (n/a).</p>
+  <h2>Graphics / DRM-KMS <span class="tag">kernel · más bajo mejor</span></h2>
+  <p class="section-note">No es el mismo dispositivo: Eclipse maneja la GPU emulada de QEMU a 1920×1080 y Linux una GPU real a 1366×768. Los ioctls miden sobre todo código del kernel; el framebuffer y el repintado dependen del hardware y no se comparan. En ambos casos un compositor tenía el display, así que page flip y cursor quedaron en n/a.</p>
   <table>
-    <thead><tr><th>Métrica</th><th>Eclipse</th><th>hint Linux</th><th class="hide-sm">vs hint</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th><th class="hide-sm">E/L</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">DRM ioctl floor (GET_CAP)</span></td><td class="val ">764.3 ns</td><td class="hint">~700</td><td class="ratio  hide-sm">≈1.1×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">DRM ioctl floor (GET_CAP)</span></td><td class="val worse">764.3 ns</td><td class="val better">259.9 ns</td><td class="hint">~700</td><td class="ratio bad hide-sm">2.9×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">MODE_GETRESOURCES</span></td><td class="val ">2895 ns</td><td class="hint">~1200</td><td class="ratio  hide-sm">≈2.4×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">MODE_GETRESOURCES</span></td><td class="val worse">2895 ns</td><td class="val better">548.7 ns</td><td class="hint">~1200</td><td class="ratio bad hide-sm">5.3×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric flag">MODE_GETCONNECTOR</span></td><td class="val worse">63 838 942 ns</td><td class="hint">~4000</td><td class="ratio bad hide-sm">≈15960×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric flag">MODE_GETCONNECTOR</span></td><td class="val worse">63 838 942 ns</td><td class="val better">3236 ns</td><td class="hint">~4000</td><td class="ratio bad hide-sm">19728×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">MODE_GETCRTC</span></td><td class="val ">2018 ns</td><td class="hint">~1000</td><td class="ratio  hide-sm">≈2.0×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">MODE_GETCRTC</span></td><td class="val worse">2018 ns</td><td class="val better">361.9 ns</td><td class="hint">~1000</td><td class="ratio bad hide-sm">5.6×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric flag">CREATE+DESTROY_DUMB</span></td><td class="val worse">2529 µs</td><td class="hint">~40</td><td class="ratio bad hide-sm">≈63×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric flag">CREATE+DESTROY_DUMB</span></td><td class="val worse">2529 µs</td><td class="val better">15.1 µs</td><td class="hint">~40</td><td class="ratio bad hide-sm">167×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">ADDFB2+RMFB</span></td><td class="val better">3.45 µs</td><td class="hint">~20</td><td class="ratio good hide-sm">≈0.17×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">ADDFB2+RMFB</span></td><td class="val worse">3.45 µs</td><td class="val better">0.93 µs</td><td class="hint">~20</td><td class="ratio bad hide-sm">3.7×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">MAP_DUMB+mmap+munmap</span></td><td class="val ">40.4 µs</td><td class="hint">~15</td><td class="ratio  hide-sm">≈2.7×</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">MAP_DUMB+mmap+munmap</span></td><td class="val worse">40.4 µs</td><td class="val better">2.36 µs</td><td class="hint">~15</td><td class="ratio bad hide-sm">17×</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">mapped fb write</span></td><td class="val better">13 693 MiB/s</td><td class="hint">&gt;2000</td><td class="ratio good hide-sm">por encima</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">mapped fb write</span></td><td class="val better">13 693 MiB/s</td><td class="val worse">2502 MiB/s</td><td class="hint">&gt;2000</td><td class="ratio warn hide-sm">no comparable</td>
       </tr>
       <tr>
-        <td><span class="kind kernel">kernel</span><span class="metric">full-screen repaint</span></td><td class="val ">0.58 ms</td><td class="hint"></td><td class="ratio  hide-sm">—</td>
+        <td><span class="kind kernel">kernel</span><span class="metric">full-screen repaint</span></td><td class="val better">0.58 ms</td><td class="val worse">1.60 ms</td><td class="hint"></td><td class="ratio warn hide-sm">no comparable</td>
       </tr>
     </tbody>
   </table>
   <div class="callout warn">
-    ⚠ Lo que decide cómo se siente un escritorio va bien: escribir en el framebuffer mapeado
-    alcanza 13.7 GB/s (write-combined, igual que memcpy) y repintar la pantalla entera cuesta
-    0.58 ms. Pero <code>MODE_GETCONNECTOR</code> tarda <strong>64 ms</strong> (Linux ~4 µs) y
-    crear un dumb buffer 2.5 ms: no afectan al frame a frame, pero sí a arrancar el compositor
-    o cambiar de modo.
+    ⚠ Los ioctls de consulta están a 3–6× de Linux, en línea con el suelo de syscall, pero dos
+    se salen de escala: <code>MODE_GETCONNECTOR</code> tarda <strong>64 ms</strong> frente a
+    3.2 µs (casi 20 000×) y crear un dumb buffer 2.5 ms frente a 15 µs (167×). No afectan al frame
+    a frame, pero sí a arrancar el compositor o cambiar de modo. El framebuffer de Eclipse es RAM
+    del host (por eso 13.7 GB/s) y el de Linux memoria de vídeo real, así que esas filas no
+    dicen quién es más rápido.
   </div>
 </section>
 
-<!-- RATIOS -->
+<!-- ratios -->
 <section id="ratios">
   <h2>Ratios <span class="tag">independientes del hardware</span></h2>
-  <p class="section-note">Estas sobreviven a correr en una VM: cada una es una división entre dos medidas de la misma máquina.</p>
+  <p class="section-note">Estas son las filas que mejor resisten la diferencia QEMU / hardware real: cada una divide dos medidas de la misma máquina.</p>
   <table>
-    <thead><tr><th>Métrica</th><th>Eclipse</th><th class="hide-sm">antes</th><th>Linux</th><th>hint</th></tr></thead>
+    <thead><tr><th>Métrica</th><th>Eclipse</th><th>Linux</th><th>hint</th></tr></thead>
     <tbody>
       <tr>
-        <td><span class="metric">syscall cost in CPU ops</span></td><td class="val worse">400.6 ops</td><td class="val prev hide-sm">523.8 ops</td><td class="val better">98.8 ops</td><td class="hint">~150–250</td>
+        <td><span class="metric">syscall cost in CPU ops</span></td><td class="val worse">400.6 ops</td><td class="val better">96.4 ops</td><td class="hint">~150–250</td>
       </tr>
       <tr>
-        <td><span class="metric">context switch / syscall</span></td><td class="val ">16.1 ×</td><td class="val prev hide-sm">16.0 ×</td><td class="val ">66.3 ×</td><td class="hint">~100</td>
+        <td><span class="metric">context switch / syscall</span></td><td class="val ">16.1 ×</td><td class="val ">57.1 ×</td><td class="hint">~100</td>
       </tr>
       <tr>
-        <td><span class="metric">wake late loaded/idle (mean)</span></td><td class="val better">0.39 ×</td><td class="val prev hide-sm">22.7 ×</td><td class="val better">0.64 ×</td><td class="hint">~1–3</td>
+        <td><span class="metric">wake late loaded/idle (mean)</span></td><td class="val ">0.39 ×</td><td class="val ">0.96 ×</td><td class="hint">~1–3</td>
       </tr>
       <tr>
-        <td><span class="metric flag">wake late loaded/idle (worst) ← interactividad</span></td><td class="val better">1.01 ×</td><td class="val prev hide-sm">20.3 ×</td><td class="val worse">0.47 ×</td><td class="hint">~1–5</td>
+        <td><span class="metric flag">wake late loaded/idle (worst) ← interactividad</span></td><td class="val ">1.01 ×</td><td class="val ">0.91 ×</td><td class="hint">~1–5</td>
       </tr>
       <tr>
-        <td><span class="metric">SMP efficiency</span></td><td class="val better">106.3 %</td><td class="val prev hide-sm">75.4 %</td><td class="val worse">85.0 %</td><td class="hint">&gt;90</td>
+        <td><span class="metric">SMP efficiency</span></td><td class="val better">106.3 %</td><td class="val worse">94.2 %</td><td class="hint">&gt;90</td>
       </tr>
       <tr>
-        <td><span class="metric">fork copy ratio</span></td><td class="val worse">1.22 ×</td><td class="val prev hide-sm">2.72 ×</td><td class="val better">0.39 ×</td><td class="hint">COW ~0.3, eager ≥1</td>
+        <td><span class="metric">fork copy ratio</span></td><td class="val ">1.22 ×</td><td class="val ">0.00 ×</td><td class="hint">COW ~0.3, eager ≥1</td>
       </tr>
       <tr>
-        <td><span class="metric">DRM ioctl / syscall</span></td><td class="val ">1.93 ×</td><td class="val prev hide-sm">—</td><td class="val ">—</td><td class="hint">~10–20 nativo; comprimido bajo emulador</td>
+        <td><span class="metric">DRM ioctl / syscall</span></td><td class="val ">1.93 ×</td><td class="val ">2.92 ×</td><td class="hint">~10–20 nativo; comprimido bajo emulador</td>
       </tr>
       <tr>
-        <td><span class="metric">fb write / memcpy</span></td><td class="val better">1.00 ×</td><td class="val prev hide-sm">—</td><td class="val ">—</td><td class="hint">1.0 = write-combined; &lt;0.1 = uncached</td>
+        <td><span class="metric">fb write / memcpy</span></td><td class="val ">1.00 ×</td><td class="val ">0.17 ×</td><td class="hint">1.0 = write-combined; &lt;0.1 = uncached</td>
       </tr>
     </tbody>
   </table>
   <div class="callout">
-    <strong><code>wake late loaded/idle</code> es el titular, y ha dado la vuelta.</strong> Un valor
-    cerca de 1 significa que una tarea despertada consigue CPU al instante aunque la máquina esté
-    ocupada. Eclipse pasa de <strong>22.7× / 20.3×</strong> a <strong>0.39× / 1.01×</strong>:
-    dentro del rango que da el benchmark para Linux (~1–3 / ~1–5) y del mismo orden que lo que
-    midió Linux en esta máquina (0.64× / 0.47×). El tirón al usarlo bajo carga ya no debería notarse.
+    <strong><code>wake late loaded/idle</code> es el titular, y Eclipse ya está a la par:</strong>
+    0.39× / 1.01× frente a 0.96× / 0.91× de Linux en hardware real. Un valor cerca de 1 significa
+    que una tarea despertada consigue CPU al instante aunque la máquina esté ocupada; Lo que separa a los dos kernels es el coste de entrar al kernel
+    (401 frente a 96 operaciones de CPU por syscall, 4.2×) y el <code>fork</code> sin COW.
     <br><br>
-    El <code>context switch / syscall</code> de 16× frente a 66× de Linux sigue sin ser una
-    victoria: el denominador de Eclipse (su syscall) es 4.4× más caro, así que el cociente sale
-    bajo porque la referencia es mala.
+    El <code>context switch / syscall</code> de 16× frente a 57× no es una victoria: el
+    denominador de Eclipse (su syscall) es 4.4× más caro, así que el cociente sale bajo porque la
+    referencia es mala.
   </div>
 </section>
 
 </main>
 
 <footer>
-  Generado desde el run más reciente de Eclipse (eclipse-bench-latest.txt) + linux.txt · columna <em>antes</em>: run anterior de Eclipse · misma máquina, 20 CPUs
+  Generado desde eclipse-bench: Eclipse en QEMU (eclipse-bench-latest.txt) y Linux en hardware real (linux.txt) · 20 CPUs
 </footer>
 
 </body>
